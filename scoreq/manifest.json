@@ -1,0 +1,11 @@
+{
+  "name": "ScoreQ",
+  "short_name": "ScoreQ",
+  "description": "膝の質問票 自動採点ツール / Knee PROMs self-scoring",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F8F7",
+  "theme_color": "#0F766E",
+  "icons": [{ "src": "icon.png", "sizes": "1024x1024", "type": "image/png" }]
+}

@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon.png">
+<meta name="theme-color" content="#0F766E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta charset="utf-8">
+<title>ScoreQ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho+B1:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#F5F8F7; --surface:#FFFFFF; --surface2:#EEF4F2;
+  --ink:#1B2A2F; --ink2:#4E6168; --muted:#7C8D93; --line:#DFE8E6;
+  --accent:#0F766E; --accent-ink:#FFFFFF; --accent-soft:#E0EFEC; --accent-line:#B8D9D3;
+  --band-poor:#B3432F; --band-fair:#A86E12; --band-good:#5B8A3C; --band-exc:#177A66;
+  --chip-pre:#8A5A00; --chip-pre-bg:#F6ECD9; --chip-post:#0F5F76; --chip-post-bg:#DFEEF3;
+  --danger:#B3432F; --shadow:0 1px 3px rgba(27,42,47,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1716; --surface:#182120; --surface2:#1F2B29;
+    --ink:#E7EEEC; --ink2:#A9BBB7; --muted:#7E918D; --line:#273533;
+    --accent:#3AB5A3; --accent-ink:#08201C; --accent-soft:#1C3330; --accent-line:#2C4A45;
+    --band-poor:#D06A55; --band-fair:#CD9A3C; --band-good:#84B063; --band-exc:#3FA68F;
+    --chip-pre:#E0B45C; --chip-pre-bg:#33290F; --chip-post:#6FBBD3; --chip-post-bg:#12303A;
+    --danger:#D06A55; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1716; --surface:#182120; --surface2:#1F2B29;
+  --ink:#E7EEEC; --ink2:#A9BBB7; --muted:#7E918D; --line:#273533;
+  --accent:#3AB5A3; --accent-ink:#08201C; --accent-soft:#1C3330; --accent-line:#2C4A45;
+  --band-poor:#D06A55; --band-fair:#CD9A3C; --band-good:#84B063; --band-exc:#3FA68F;
+  --chip-pre:#E0B45C; --chip-pre-bg:#33290F; --chip-post:#6FBBD3; --chip-post-bg:#12303A;
+  --danger:#D06A55; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",-apple-system,"Hiragino Sans",sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
+header.app{display:flex;align-items:baseline;justify-content:space-between;padding:20px 0 4px}
+.brand{font-family:"Shippori Mincho B1",serif;font-weight:700;font-size:26px;letter-spacing:.02em}
+.brand small{font-family:"Noto Sans JP",sans-serif;font-weight:400;font-size:12px;color:var(--muted);margin-left:10px;letter-spacing:.05em}
+.langbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;padding:5px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+.langbtn:hover{border-color:var(--accent)}
+nav.tabs{display:flex;gap:4px;margin:14px 0 20px;border-bottom:1px solid var(--line)}
+nav.tabs button{appearance:none;background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px 10px;font:inherit;font-weight:500;color:var(--ink2);cursor:pointer}
+nav.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-family:"Shippori Mincho B1",serif;font-size:18px;margin:0 0 4px;letter-spacing:.02em}
+.card h2 .en{font-family:"Noto Sans JP",sans-serif;font-size:12px;color:var(--muted);font-weight:400;margin-left:8px}
+.sub{color:var(--ink2);font-size:13px;margin:0 0 14px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.formgrid{grid-template-columns:1fr}}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.06em;margin-bottom:4px}
+.field input,.field select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.btn{appearance:none;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);padding:9px 18px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border:none;background:none;color:var(--accent);padding:6px 8px}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.rowend{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.ctx{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700}
+.chip.pre{background:var(--chip-pre-bg);color:var(--chip-pre)}
+.chip.post{background:var(--chip-post-bg);color:var(--chip-post)}
+.chip.neutral{background:var(--surface2);color:var(--ink2)}
+.reclist{display:flex;flex-direction:column;gap:10px}
+.recitem{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.recitem .info{flex:1;min-width:0}
+.recitem .qname{font-weight:700;font-size:14px}
+.recitem .qname .tag{font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+.recitem .why{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.qcard{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--surface)}
+.qcard .head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.qcard .qtitle{font-weight:700;font-size:15px}
+.qcard .meta{font-size:12px;color:var(--muted)}
+.qcard .desc{font-size:13px;color:var(--ink2);margin:6px 0 10px}
+.item{padding:16px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item.unanswered{background:linear-gradient(to right,var(--accent-soft),transparent);border-radius:8px;padding-left:10px;padding-right:10px}
+.qnum{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.qtext{font-weight:500;margin:2px 0 10px}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px;line-height:1.5}
+.opt:hover{border-color:var(--accent-line)}
+.opt input{margin-top:3px;accent-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.scale{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}
+.scale button{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 0;font:inherit;font-size:13px;font-variant-numeric:tabular-nums;cursor:pointer;color:var(--ink)}
+.scale button.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.anchors{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px;gap:12px}
+.anchors span:last-child{text-align:right}
+.progress{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 8px;display:flex;align-items:center;gap:12px}
+.pbar{flex:1;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.pbar div{height:100%;background:var(--accent);border-radius:3px;transition:width .2s}
+.pnum{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.result{border:1px solid var(--accent-line);background:var(--surface);border-radius:12px;padding:20px;margin-top:18px}
+.result h3{font-family:"Shippori Mincho B1",serif;margin:0 0 14px;font-size:17px}
+.scorerow{margin-bottom:20px}
+.scorehead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.scorename{font-weight:700;font-size:14px;color:var(--ink2)}
+.scoreval{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.scoreval small{font-size:14px;color:var(--muted);font-weight:400}
+.verdict{font-size:13px;font-weight:700}
+.meter{position:relative;height:14px;margin:10px 0 4px}
+.meter .segs{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden}
+.meter .seg{height:14px}
+.meter .mark{position:absolute;top:-4px;width:4px;height:22px;border-radius:2px;background:var(--ink);outline:2px solid var(--surface)}
+.meterlab{display:flex;font-size:10.5px;color:var(--muted);margin-bottom:2px;gap:2px}
+.meterlab span{overflow:hidden;white-space:nowrap}
+.interp{font-size:14px;color:var(--ink);margin-top:14px}
+.interp p{margin:0 0 10px}
+.refbox{background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--ink2);margin-top:12px}
+.refbox b{color:var(--ink)}
+.refbox ul{margin:4px 0 0;padding-left:18px}
+.refbox li{margin-bottom:3px}
+.note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+.rechead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+table.recs{width:100%;border-collapse:collapse;font-size:13px}
+table.recs th{text-align:left;font-size:11px;color:var(--muted);letter-spacing:.06em;font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.recs td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
+table.recs td.score{font-weight:700}
+.delta{font-size:11.5px;font-weight:700}
+.delta.up{color:var(--band-exc)}
+.delta.down{color:var(--band-poor)}
+.tblwrap{overflow-x:auto}
+.empty{color:var(--muted);font-size:14px;padding:24px 0;text-align:center}
+.backrow{margin:4px 0 14px}
+.disc{font-size:11.5px;color:var(--muted);margin-top:28px;padding-top:14px;border-top:1px solid var(--line);line-height:1.7}
+.subq{font-size:12px;color:var(--muted);font-weight:400}
+a{color:var(--accent)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">ScoreQ<small id="tagline"></small></div>
+    <button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button>
+  </header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="app"></main>
+  <div class="disc" id="disc"></div>
+</div>
+<script>
+"use strict";
+/* ---------- i18n helpers ---------- */
+const L=(ja,en)=>({ja,en});
+let lang=(()=>{try{return localStorage.getItem("sq_lang")||"ja"}catch(e){return "ja"}})();
+const t=o=>o?(o[lang]||o.ja):"";
+function toggleLang(){lang=lang==="ja"?"en":"ja";try{localStorage.setItem("sq_lang",lang)}catch(e){};render();}
+
+/* ---------- UI strings ---------- */
+const S={
+  tagline:L("膝PROMs 自動採点","Knee PROMs auto-scoring"),
+  tabHome:L("ホーム","Home"),tabList:L("質問票","Questionnaires"),tabRec:L("記録","Records"),
+  caseInfo:L("症例情報","Case information"),
+  caseSub:L("疾患と術式を入力すると、推奨される質問票が表示されます。","Enter diagnosis and procedure to see recommended questionnaires."),
+  disease:L("疾患","Diagnosis"),injury:L("受傷日 / 発症日","Date of injury / onset"),
+  procedure:L("術式","Procedure"),surgDate:L("手術日","Date of surgery"),
+  save:L("保存","Save"),saved:L("保存しました","Saved"),clear:L("クリア","Clear"),
+  recTitle:L("推奨質問票","Recommended questionnaires"),
+  recSub:L("この疾患・術式で一般的に用いられるPROMsです。","PROMs commonly used for this diagnosis and procedure."),
+  answer:L("回答する","Answer"),
+  listTitle:L("質問票一覧","All questionnaires"),
+  listSub:L("症例情報を入力せずに、任意の質問票に直接回答して一般的な解説を確認できます。","Answer any questionnaire directly and see its general interpretation, without entering case information."),
+  items:L("項目","items"),min:L("約","~"),minU:L("分","min"),
+  score:L("採点する","Score"),
+  unanswered:n=>lang==="ja"?`未回答が ${n} 問あります`:`${n} item(s) unanswered`,
+  resultTitle:L("結果","Result"),
+  saveRec:L("記録に保存","Save to records"),savedRec:L("記録に保存しました","Saved to records"),
+  back:L("← 戻る","← Back"),
+  recsTitle:L("記録","Records"),
+  recsSub:L("保存したスコアの一覧です。同じ質問票の前回値との差を表示します。","Saved scores, with change from the previous administration of the same questionnaire."),
+  thDate:L("日付","Date"),thQ:L("質問票","PROM"),thTiming:L("時期","Timing"),thScore:L("スコア","Score"),thDelta:L("前回比","Δ"),
+  del:L("削除","Delete"),delAll:L("全記録を削除","Delete all"),
+  confirmDel:L("もう一度押すと削除","Tap again to delete"),
+  confirmDelAll:L("もう一度押すと全削除","Tap again to delete all"),
+  csv:L("CSVコピー","Copy CSV"),csvDone:L("コピーしました","Copied"),
+  noRecs:L("保存された記録はまだありません。","No records saved yet."),
+  preOp:L("術前","Pre-op"),
+  postOp:m=>lang==="ja"?`術後 ${m}`:`${m} post-op`,
+  postInj:m=>lang==="ja"?`受傷後 ${m}`:`${m} post-injury`,
+  mo:(m)=>lang==="ja"?(m<1?"1か月未満":`${m}か月`):(m<1?"<1 mo":`${m} mo`),
+  directNote:L("症例情報なしで回答中です(一般的な解説を表示)。","Answering without case information — showing general interpretation."),
+  refValues:L("参考値","Reference values"),
+  generalDesc:L("この質問票について","About this questionnaire"),
+  timingLabel:L("評価時期","Assessment timing"),
+  storageNote:L("データはこの端末のブラウザ内のみに保存されます(サーバーには送信されません)。","Data is stored only in this device's browser and is never sent to a server."),
+  disclaimer:L("本ツールの日本語訳・英語文は参考用の再構成であり、公式の言語検証済み版と一致しない場合があります。研究・論文には各PROMの公式版を使用してください。Oxford Knee Score・FJS-12等は商用利用にライセンスが必要です。表示される解説・参考値は文献に基づく一般的な目安であり、臨床判断の代替にはなりません。","Item wording (both languages) is a reference reconstruction and may differ from officially validated versions — use official versions for research. Oxford Knee Score, FJS-12 and others require a licence for commercial use. Interpretations and reference values are general literature-based guides, not a substitute for clinical judgement."),
+  noBands:L("公式のカットオフはありません。以下は文献に基づく目安です。","No official cut-offs exist; bands below are literature-based guides."),
+  kujalaNote:L("※膝蓋大腿関節障害用のKujalaスコアは現バージョン未収載です。","Note: the Kujala score for patellofemoral disorders is not yet included."),
+  resTitle:L("ACL術前/術後質問票","ACL Pre/Post-op Questionnaire"),
+  resDesc:L("ACL再建術の経過評価用。基本情報を入力し、IKDCとACL-RSIにまとめて回答すると、両方のスコアが表示され、結果をPDFで保存できます。","For follow-up of ACL reconstruction. Enter basic information, answer IKDC and ACL-RSI together, see both scores, and save the results as a PDF."),
+  resStart:L("開始する","Start"),
+  resInfo:L("基本情報","Basic information"),
+  side:L("術側","Operated side"),
+  sideR:L("右","Right"),sideL:L("左","Left"),
+  timepoint:L("今回の評価時点","Assessment time point"),
+  tpPre:L("術前","Pre-op"),
+  tpOther:L("その他","Other"),
+  tpPost:n=>lang==="ja"?`術後${n}か月`:`${n} mo post-op`,
+  resMissingInfo:L("基本情報(術側・評価時点)を入力してください","Please enter the basic information (side, time point)"),
+  pdfSave:L("PDFを保存","Save PDF"),
+  pdfSaving:L("PDF作成中…","Generating PDF…"),
+  pdfSaved:L("PDFを保存しました","PDF saved"),
+  pdfDeclined:L("保存がキャンセルされました","Save was cancelled"),
+  pdfFail:L("この環境ではPDF保存を利用できません","PDF saving is not available here"),
+  reportTitle:L("ACL術前/術後質問票 結果レポート","ACL Pre/Post-op Questionnaire Report"),
+  evalDate:L("評価日","Assessment date"),
+  answers:L("回答値","Raw answers"),
+};
+
+/* ---------- option sets ---------- */
+const OPT={
+  freq5:[[0,L("全くない","Never")],[1,L("まれに","Rarely")],[2,L("ときどき","Sometimes")],[3,L("しばしば","Often")],[4,L("いつも","Always")]],
+  sev5:[[0,L("なし","None")],[1,L("軽度","Mild")],[2,L("中等度","Moderate")],[3,L("重度","Severe")],[4,L("極度","Extreme")]],
+  dif5:[[0,L("困難なし","None")],[1,L("少し困難","Mild")],[2,L("中等度に困難","Moderate")],[3,L("非常に困難","Severe")],[4,L("できない/極度に困難","Extreme")]],
+  can5:[[0,L("いつもできる","Always")],[1,L("しばしばできる","Often")],[2,L("ときどきできる","Sometimes")],[3,L("まれにできる","Rarely")],[4,L("全くできない","Never")]],
+  painfreq:[[0,L("全くない","Never")],[1,L("月に1回程度","Monthly")],[2,L("週に1回程度","Weekly")],[3,L("毎日","Daily")],[4,L("常に","Always")]],
+  fjs5:[[0,L("全く意識しない","Never")],[1,L("ほとんど意識しない","Almost never")],[2,L("まれに意識する","Seldom")],[3,L("ときどき意識する","Sometimes")],[4,L("ほとんどいつも意識する","Mostly")]],
+  ikdcAct:[[4,L("非常に激しい活動(バスケットボールやサッカーのようなジャンプ・旋回動作を含む)","Very strenuous activities like jumping or pivoting as in basketball or soccer")],
+           [3,L("激しい活動(重い肉体労働、スキー、テニスなど)","Strenuous activities like heavy physical work, skiing or tennis")],
+           [2,L("中等度の活動(中等度の肉体労働、ランニング、ジョギングなど)","Moderate activities like moderate physical work, running or jogging")],
+           [1,L("軽い活動(歩行、家事、庭仕事など)","Light activities like walking, housework or yard work")],
+           [0,L("膝のため上記のいずれの活動も行えない","Unable to perform any of the above activities due to knee")]],
+};
+const dif=(ja,en)=>({t:L(ja,en),opts:OPT.dif5});
+const sev=(ja,en)=>({t:L(ja,en),opts:OPT.sev5});
+
+/* ---------- band helpers ---------- */
+const B={poor:"var(--band-poor)",fair:"var(--band-fair)",good:"var(--band-good)",exc:"var(--band-exc)"};
+
+/* ---------- questionnaire definitions ---------- */
+const QS=[
+/* ============ IKDC ============ */
+{
+ id:"ikdc",
+ name:L("IKDC 主観的膝評価フォーム","IKDC Subjective Knee Form"),
+ short:"IKDC",
+ time:5,
+ desc:L("国際膝関節資料委員会(IKDC)による膝の症状・機能・スポーツ活動の総合評価。ACL損傷をはじめ幅広い膝疾患で国際標準として用いられます。18項目、0〜100点(高いほど良好)。","The International Knee Documentation Committee subjective form: a global standard for knee symptoms, function and sports activity across knee conditions including ACL injury. 18 items, scored 0–100 (higher = better)."),
+ period:L("過去4週間(または受傷後)の状態についてお答えください。","Answer for the past 4 weeks, or since your injury."),
+ items:[
+  {t:L("膝に強い痛みを感じずに行える最も高い活動レベルは？","What is the highest level of activity you can perform without significant knee pain?"),opts:OPT.ikdcAct},
+  {t:L("この4週間(または受傷後)、どのくらいの頻度で痛みがありましたか？","How often have you had pain over the past 4 weeks (or since injury)?"),scale:{lo:L("全く痛まない","Never"),hi:L("常に痛い","Constant"),rev:true}},
+  {t:L("痛みがあるとき、その強さは？","If you have pain, how severe is it?"),scale:{lo:L("痛みなし","No pain"),hi:L("想像しうる最悪の痛み","Worst pain imaginable"),rev:true}},
+  {t:L("この4週間(または受傷後)、膝のこわばりや腫れはどの程度でしたか？","How stiff or swollen was your knee over the past 4 weeks (or since injury)?"),
+   opts:[[4,L("全くなかった","Not at all")],[3,L("軽度","Mildly")],[2,L("中等度","Moderately")],[1,L("かなり","Very")],[0,L("極度","Extremely")]]},
+  {t:L("膝の明らかな腫れを生じずに行える最も高い活動レベルは？","What is the highest level of activity you can perform without significant swelling in your knee?"),opts:OPT.ikdcAct},
+  {t:L("この4週間(または受傷後)、膝の引っかかり(ロッキング)がありましたか？","Did your knee lock or catch over the past 4 weeks (or since injury)?"),
+   opts:[[0,L("はい","Yes")],[1,L("いいえ","No")]]},
+  {t:L("膝崩れ(ガクッとなる)を生じずに行える最も高い活動レベルは？","What is the highest level of activity you can perform without significant giving way in your knee?"),opts:OPT.ikdcAct},
+  {t:L("定期的に参加できる最も高い活動レベルは？","What is the highest level of activity you can participate in on a regular basis?"),opts:OPT.ikdcAct},
+  {t:L("階段を上る","Go up stairs"),opts:OPT.dif5,rev4:true,stem:L("次の動作はどの程度困難ですか？","How difficult are the following activities?")},
+  {t:L("階段を下りる","Go down stairs"),opts:OPT.dif5,rev4:true},
+  {t:L("膝立ちになる(ひざまずく)","Kneel on the front of your knee"),opts:OPT.dif5,rev4:true},
+  {t:L("しゃがみ込む","Squat"),opts:OPT.dif5,rev4:true},
+  {t:L("膝を曲げて座る","Sit with your knee bent"),opts:OPT.dif5,rev4:true},
+  {t:L("椅子から立ち上がる","Rise from a chair"),opts:OPT.dif5,rev4:true},
+  {t:L("まっすぐ前に走る","Run straight ahead"),opts:OPT.dif5,rev4:true},
+  {t:L("ジャンプして患側の脚で着地する","Jump and land on your involved leg"),opts:OPT.dif5,rev4:true},
+  {t:L("素早く止まり、素早く動き出す","Stop and start quickly"),opts:OPT.dif5,rev4:true},
+  {t:L("現在の膝の機能を0〜10で評価してください","How would you rate the current function of your knee on a scale of 0 to 10?"),scale:{lo:L("日常生活動作が全くできない","Cannot perform daily activities"),hi:L("制限なし(何でもできる)","No limitation")}},
+ ],
+ compute(a){
+   let raw=0;
+   this.items.forEach((it,i)=>{
+     let v=a[i];
+     if(it.scale){ raw+= it.scale.rev?(10-v):v; }
+     else if(it.rev4){ raw+=(4-v); }
+     else raw+=v;
+   });
+   const score=Math.round(raw/87*1000)/10;
+   return [{key:"total",label:L("IKDCスコア","IKDC score"),value:score,max:100}];
+ },
+ bands:[{to:60,c:B.poor,l:L("重度の機能障害","Severe impairment")},{to:75,c:B.fair,l:L("中等度","Moderate")},{to:90,c:B.good,l:L("良好","Good")},{to:100,c:B.exc,l:L("ほぼ正常","Near-normal")}],
+ interp(sc){
+   const s=sc[0].value;
+   const ja= s>=90?"健常者の平均域に近い、ほぼ正常な膝機能です。":
+             s>=75?"良好な膝機能です。ACL再建術後の患者許容症状状態(PASS)の報告値(約76点)前後に達しています。":
+             s>=60?"中等度の機能障害が残存しています。症状の内訳(痛み・不安定感・活動制限)を確認し、リハビリ強化や追加評価を検討してください。":
+             "重度の機能障害を示すスコアです。原因(疼痛、不安定性、可動域制限など)の精査が推奨されます。";
+   const en= s>=90?"Near-normal knee function, close to healthy population norms.":
+             s>=75?"Good knee function — at or above the reported Patient Acceptable Symptom State (PASS ≈76) after ACL reconstruction.":
+             s>=60?"Moderate residual impairment. Review the symptom profile (pain, instability, activity limits) and consider intensified rehabilitation.":
+             "This score indicates severe impairment; work-up of the cause (pain, instability, restricted motion) is recommended.";
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>MCID(最小臨床重要差): 術後6か月で約11.5点、12か月で約20点(Collins 2011ほか)</li><li>ACL再建術後のPASS: 75.9点(Muller 2016)</li><li>健常成人の平均: 年齢・性別により約77〜99点(Anderson 2006 規範値)</li></ul>","<b>Reference values:</b><ul><li>MCID: ≈11.5 at 6 mo, ≈20 at 12 mo post-op (Collins 2011 et al.)</li><li>PASS after ACL reconstruction: 75.9 (Muller 2016)</li><li>Healthy adult norms: ≈77–99 by age/sex (Anderson 2006)</li></ul>"),
+},
+/* ============ ACL-RSI ============ */
+{
+ id:"aclrsi",
+ name:L("ACL-RSI(スポーツ復帰への心理的準備)","ACL-RSI (Return to Sport after Injury)"),
+ short:"ACL-RSI",
+ time:3,
+ desc:L("ACL損傷後のスポーツ復帰に対する「感情・自信・リスク評価」という心理的準備性を測る12項目の尺度。0〜100点(高いほど心理的準備が良好)。復帰可否判断や再受傷リスク評価の補助に用いられます。","A 12-item scale measuring psychological readiness (emotions, confidence, risk appraisal) to return to sport after ACL injury. 0–100, higher = greater readiness. Used to support return-to-sport decisions and re-injury risk assessment."),
+ period:L("スポーツ復帰について、現在の気持ちに最も近い数字を選んでください。","For each question, choose the number closest to how you feel now about returning to sport."),
+ items:[
+  {t:L("スポーツを以前と同じレベルで行える自信がありますか？","Are you confident that you can perform at your previous level of sport?"),scale:{lo:L("全く自信がない","Not at all confident"),hi:L("完全に自信がある","Fully confident")}},
+  {t:L("スポーツをすると膝を再受傷しそうだと思いますか？","Do you think you are likely to re-injure your knee by participating in your sport?"),scale:{lo:L("非常にそう思う","Extremely likely"),hi:L("全く思わない","Not likely at all")}},
+  {t:L("スポーツをすることに緊張や不安を感じますか？","Are you nervous about playing your sport?"),scale:{lo:L("非常に感じる","Extremely nervous"),hi:L("全く感じない","Not nervous at all")}},
+  {t:L("スポーツ中に膝崩れを起こさない自信がありますか？","Are you confident that your knee will not give way by playing your sport?"),scale:{lo:L("全く自信がない","Not at all confident"),hi:L("完全に自信がある","Fully confident")}},
+  {t:L("膝を気にせずスポーツができる自信がありますか？","Are you confident that you could play your sport without concern for your knee?"),scale:{lo:L("全く自信がない","Not at all confident"),hi:L("完全に自信がある","Fully confident")}},
+  {t:L("スポーツの際に膝のことを考慮しなければならないことに、いらだちを感じますか？","Do you find it frustrating to have to consider your knee with respect to your sport?"),scale:{lo:L("非常に感じる","Extremely frustrating"),hi:L("全く感じない","Not at all")}},
+  {t:L("スポーツで膝を再受傷することが怖いですか？","Are you fearful of re-injuring your knee by playing your sport?"),scale:{lo:L("非常に怖い","Extremely fearful"),hi:L("全く怖くない","Not fearful at all")}},
+  {t:L("プレッシャーのかかる場面でも膝が耐えられる自信がありますか？","Are you confident about your knee holding up under pressure?"),scale:{lo:L("全く自信がない","Not at all confident"),hi:L("完全に自信がある","Fully confident")}},
+  {t:L("スポーツ中に思いがけず膝を傷めてしまうことが怖いですか？","Are you afraid of accidentally injuring your knee by playing your sport?"),scale:{lo:L("非常に怖い","Extremely afraid"),hi:L("全く怖くない","Not afraid at all")}},
+  {t:L("「また手術やリハビリを経験するかもしれない」という考えが、スポーツをする妨げになっていますか？","Do thoughts of having to go through surgery and rehabilitation again prevent you from playing your sport?"),scale:{lo:L("非常に妨げになっている","Completely prevent me"),hi:L("全く妨げになっていない","Not at all")}},
+  {t:L("スポーツで良いパフォーマンスを発揮できる自信がありますか？","Are you confident about your ability to perform well at your sport?"),scale:{lo:L("全く自信がない","Not at all confident"),hi:L("完全に自信がある","Fully confident")}},
+  {t:L("リラックスした気持ちでスポーツができますか？","Do you feel relaxed about playing your sport?"),scale:{lo:L("全くできない","Not at all relaxed"),hi:L("完全にリラックスできる","Fully relaxed")}},
+ ],
+ compute(a){
+   const sum=this.items.reduce((s,_,i)=>s+a[i],0);
+   const score=Math.round(sum/120*1000)/10;
+   return [{key:"total",label:L("ACL-RSIスコア","ACL-RSI score"),value:score,max:100}];
+ },
+ bands:[{to:56,c:B.poor,l:L("低い","Low")},{to:65,c:B.fair,l:L("境界域","Borderline")},{to:100,c:B.exc,l:L("良好","Good")}],
+ interp(sc){
+   const s=sc[0].value;
+   const ja= s>=65?"心理的準備性は良好です。65点以上は受傷前レベルへのスポーツ復帰と関連することが報告されています。身体機能検査と合わせて復帰判断を進められます。":
+             s>=56?"境界域のスコアです。復帰は可能性がありますが、恐怖感・自信の項目を個別に確認し、段階的復帰や心理的サポートを検討してください。":
+             "心理的準備性が低いスコアです(56点未満は復帰困難・復帰後の再受傷リスク上昇と関連)。運動恐怖への段階的曝露、心理面を含めたリハビリ介入の検討が推奨されます。";
+   const en= s>=65?"Good psychological readiness. Scores ≥65 are associated with return to pre-injury sport level; proceed alongside physical testing.":
+             s>=56?"Borderline readiness. Return is possible, but review fear/confidence items individually and consider graded return and psychological support.":
+             "Low psychological readiness (<56 is associated with failure to return and higher re-injury risk). Consider graded exposure to feared movements and psychologically-informed rehabilitation.";
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>65点以上: 受傷前レベルへの復帰と関連(Ardern 2013, Webster 2018)</li><li>術後4〜6か月で56点未満: 12か月時点の非復帰の予測因子(Ardern 2013)</li><li>若年者の再受傷リスク評価の一要素としても報告(McPherson 2019)</li></ul>","<b>Reference values:</b><ul><li>≥65: associated with return to pre-injury level (Ardern 2013, Webster 2018)</li><li><56 at 4–6 mo: predicts non-return at 12 mo (Ardern 2013)</li><li>Also reported as a factor in youth re-injury risk (McPherson 2019)</li></ul>"),
+},
+/* ============ Lysholm ============ */
+{
+ id:"lysholm",
+ name:L("Lysholm膝スコア","Lysholm Knee Score"),
+ short:"Lysholm",
+ time:3,
+ desc:L("跛行・支持・ロッキング・不安定性・疼痛・腫脹・階段・しゃがみ込みの8項目からなる古典的膝機能スコア。ACL・半月板損傷で広く使用。0〜100点(高いほど良好)。","A classic 8-item knee function score (limp, support, locking, instability, pain, swelling, stairs, squatting), widely used for ACL and meniscal injury. 0–100, higher = better."),
+ period:L("現在の膝の状態についてお答えください。","Answer for the current condition of your knee."),
+ items:[
+  {t:L("跛行(足を引きずること)はありますか？","Do you have a limp?"),opts:[[5,L("ない","None")],[3,L("軽度、または時々ある","Slight or periodic")],[0,L("高度で、常にある","Severe and constant")]]},
+  {t:L("歩行時に支え(杖など)が必要ですか？","Do you need support when walking?"),opts:[[5,L("不要","None")],[2,L("杖または松葉杖が必要","Stick or crutch")],[0,L("荷重できない","Weight-bearing impossible")]]},
+  {t:L("膝の引っかかり(ロッキング)はありますか？","Does your knee lock or catch?"),opts:[[15,L("引っかかり感もロッキングもない","No locking and no catching")],[10,L("引っかかり感はあるがロッキングはない","Catching sensation but no locking")],[6,L("時々ロッキングする","Locking occasionally")],[2,L("頻繁にロッキングする","Locking frequently")],[0,L("診察時にもロッキングしている","Locked joint on examination")]]},
+  {t:L("膝崩れ(ガクッとなる不安定感)はありますか？","Does your knee give way?"),opts:[[25,L("ない","Never")],[20,L("スポーツや激しい運動でまれにある","Rarely, during athletics or severe exertion")],[15,L("スポーツや激しい運動で頻繁にある(またはそれらが不可能)","Frequently during athletics (or unable to participate)")],[10,L("日常生活で時々ある","Occasionally in daily activities")],[5,L("日常生活でしばしばある","Often in daily activities")],[0,L("一歩ごとにある","Every step")]]},
+  {t:L("膝の痛みはありますか？","Do you have pain in your knee?"),opts:[[25,L("ない","None")],[20,L("激しい運動時に軽度・時々ある","Inconstant and slight during severe exertion")],[15,L("激しい運動時に著明","Marked during severe exertion")],[10,L("2km以上の歩行で著明","Marked on walking more than 2 km")],[5,L("2km未満の歩行で著明","Marked on walking less than 2 km")],[0,L("常にある","Constant")]]},
+  {t:L("膝の腫れはありますか？","Do you have swelling in your knee?"),opts:[[10,L("ない","None")],[6,L("激しい運動後にある","With severe exertion")],[2,L("通常の運動後にもある","With ordinary exertion")],[0,L("常にある","Constant")]]},
+  {t:L("階段の昇り降りはできますか？","Can you climb stairs?"),opts:[[10,L("問題ない","No problem")],[6,L("やや困難","Slightly impaired")],[2,L("一段ずつなら可能","One step at a time")],[0,L("できない","Unable")]]},
+  {t:L("しゃがみ込みはできますか？","Can you squat?"),opts:[[5,L("問題ない","No problem")],[4,L("やや困難","Slightly impaired")],[2,L("90°までなら可能","Not beyond 90°")],[0,L("できない","Unable")]]},
+ ],
+ compute(a){
+   const sum=this.items.reduce((s,_,i)=>s+a[i],0);
+   return [{key:"total",label:L("Lysholmスコア","Lysholm score"),value:sum,max:100}];
+ },
+ bands:[{to:65,c:B.poor,l:L("不良","Poor")},{to:84,c:B.fair,l:L("可","Fair")},{to:95,c:B.good,l:L("良好","Good")},{to:100,c:B.exc,l:L("優秀","Excellent")}],
+ interp(sc){
+   const s=sc[0].value;
+   const ja= s>=95?"優秀(Excellent)に分類されるスコアです。日常・スポーツ活動での症状はほぼありません。":
+             s>=84?"良好(Good)に分類されるスコアです。軽度の症状が残るものの機能は概ね保たれています。":
+             s>=65?"可(Fair)に分類されます。不安定性・疼痛など減点の大きい項目を確認し、介入の余地を検討してください。":
+             "不良(Poor)に分類されるスコアです。日常生活に支障をきたす症状があり、原因検索と治療方針の見直しが推奨されます。";
+   const en= s>=95?"Classified as excellent — essentially symptom-free in daily and sports activity.":
+             s>=84?"Classified as good — minor symptoms with largely preserved function.":
+             s>=65?"Classified as fair. Check which domains (instability, pain) lost points and consider targeted intervention.":
+             "Classified as poor — symptoms interfere with daily life; re-evaluation of cause and treatment is recommended.";
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>区分: 95–100 優 / 84–94 良 / 65–83 可 / <65 不良(Tegner & Lysholm 1985; 報告により区分値に幅あり)</li><li>MCID: 半月板術後で約10点前後の報告</li></ul>","<b>Reference values:</b><ul><li>Categories: 95–100 excellent / 84–94 good / 65–83 fair / <65 poor (Tegner & Lysholm 1985; cut-offs vary between reports)</li><li>MCID ≈10 after meniscal surgery</li></ul>"),
+},
+/* ============ Tegner ============ */
+{
+ id:"tegner",
+ name:L("Tegner活動性スケール","Tegner Activity Scale"),
+ short:"Tegner",
+ time:1,
+ desc:L("仕事・スポーツの活動レベルを0〜10で表す単一項目の尺度。スコア単独ではなく「受傷前レベルとの差」で解釈します。Lysholmスコアと併用されることが多い尺度です。","A single-item 0–10 scale of work and sports activity level. Interpreted as the gap from the pre-injury level rather than in isolation; commonly paired with the Lysholm score."),
+ period:L("現在の活動レベルに最も近いものを1つ選んでください(受傷前のレベルも別途記録しておくと比較できます)。","Choose the level closest to your current activity (recording your pre-injury level separately allows comparison)."),
+ items:[
+  {t:L("現在の活動レベル","Current activity level"),opts:[
+    [10,L("競技スポーツ: サッカー(全国/国際レベル)","Competitive sport: soccer at national/international elite level")],
+    [9,L("競技スポーツ: サッカー(下位リーグ)、アイスホッケー、体操、レスリングなど","Competitive sport: lower-division soccer, ice hockey, gymnastics, wrestling")],
+    [8,L("競技スポーツ: ラケットボール、陸上(跳躍)、アルペンスキーなど","Competitive sport: racquetball, track athletics (jumping), downhill skiing")],
+    [7,L("競技スポーツ(テニス、陸上長距離、モトクロス、ハンドボール等)/レクリエーション(サッカー、アイスホッケー、ランニング週5回以上)","Competitive sport (tennis, athletics, motocross, handball) or recreational soccer/ice hockey/running >5×week")],
+    [6,L("レクリエーションスポーツ: テニス、バドミントン、ハンドボール、アルペンスキー、ジョギング週5回以上","Recreational sport: tennis, badminton, handball, downhill skiing, jogging ≥5×week")],
+    [5,L("重労働(建設業など)/競技サイクリング・クロスカントリースキー/不整地でのジョギング週2回以上","Heavy labour; competitive cycling or cross-country skiing; jogging on uneven ground ≥2×week")],
+    [4,L("中等度の重労働(トラック運転など)/サイクリング・クロスカントリースキー/平地でのジョギング週2回以上","Moderately heavy labour; recreational cycling/cross-country skiing; jogging on even ground ≥2×week")],
+    [3,L("軽労働(看護など)/競技・レクリエーション水泳/森の中の歩行が可能","Light labour (e.g. nursing); competitive or recreational swimming; walking in forest possible")],
+    [2,L("軽労働/不整地の歩行は可能だが、森の中の歩行は不可能","Light labour; walking on uneven ground possible but walking in forest impossible")],
+    [1,L("座位中心の仕事/平地の歩行は可能","Sedentary work; walking on even ground possible")],
+    [0,L("膝の問題のため病欠中、または障害年金を受給","Sick leave or disability pension because of knee problems")],
+  ]},
+ ],
+ compute(a){
+   return [{key:"total",label:L("Tegnerレベル","Tegner level"),value:a[0],max:10}];
+ },
+ bands:null,
+ interp(sc){
+   const s=sc[0].value;
+   const ja=`現在の活動レベルは Tegner ${s} です。このスケールは絶対値よりも「受傷前レベルにどこまで戻れたか」で解釈します。受傷前との差が1以内であれば活動性はほぼ回復と評価されます。健常成人の中央値はおよそ5〜6、競技アスリートは7以上です。`;
+   const en=`Current activity level is Tegner ${s}. Interpret this scale by the gap from the pre-injury level rather than the absolute value — within 1 level of pre-injury is generally regarded as restored activity. Median for healthy adults is about 5–6; competitive athletes score ≥7.`;
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>受傷前レベルとの差で解釈(Tegner & Lysholm 1985)</li><li>ACL再建術後: 受傷前より平均1レベル程度低下する報告が多い</li></ul>","<b>Reference values:</b><ul><li>Interpret relative to pre-injury level (Tegner & Lysholm 1985)</li><li>After ACL reconstruction, many reports show a mean drop of ≈1 level from pre-injury</li></ul>"),
+},
+/* ============ KOOS ============ */
+{
+ id:"koos",
+ name:L("KOOS(膝損傷・変形性膝関節症評価)","KOOS (Knee injury & Osteoarthritis Outcome Score)"),
+ short:"KOOS",
+ time:10,
+ desc:L("疼痛・症状・日常生活(ADL)・スポーツ/レク・膝関連QOLの5つの下位尺度(計42項目)を持つ包括的評価。ACL・半月板損傷から変形性膝関節症・骨切り術・人工関節まで幅広く妥当性が検証されています。各下位尺度0〜100点(高いほど良好)。","A comprehensive instrument with five subscales — Pain, Symptoms, ADL, Sport/Recreation and knee-related QOL (42 items) — validated from ACL and meniscal injury through osteoarthritis, osteotomy and arthroplasty. Each subscale scored 0–100 (higher = better)."),
+ period:L("過去1週間の膝の状態を思い出してお答えください。","Answer thinking of your knee during the last week."),
+ items:(()=>{
+   const it=[];
+   const sy=L("症状","Symptoms");
+   it.push({sub:"S",t:L("膝の腫れがありましたか？","Did you have swelling in your knee?"),opts:OPT.freq5,stem:sy});
+   it.push({sub:"S",t:L("膝を動かしたときに、きしみ音やカチカチという音などがありましたか？","Did you feel grinding, hear clicking or any other type of noise when your knee moved?"),opts:OPT.freq5});
+   it.push({sub:"S",t:L("動作中に膝が引っかかりましたか？","Did your knee catch or hang up when moving?"),opts:OPT.freq5});
+   it.push({sub:"S",t:L("膝を完全にまっすぐ伸ばすことができましたか？","Could you straighten your knee fully?"),opts:OPT.can5});
+   it.push({sub:"S",t:L("膝を完全に曲げることができましたか？","Could you bend your knee fully?"),opts:OPT.can5});
+   it.push({sub:"S",t:L("朝、目覚めた直後の膝のこわばりはどの程度でしたか？","How severe was your knee stiffness after first wakening in the morning?"),opts:OPT.sev5});
+   it.push({sub:"S",t:L("日中、座ったり横になったり休息した後のこわばりはどの程度でしたか？","How severe was your knee stiffness after sitting, lying or resting later in the day?"),opts:OPT.sev5});
+   it.push({sub:"P",t:L("膝の痛みをどのくらいの頻度で感じましたか？","How often did you experience knee pain?"),opts:OPT.painfreq,stem:L("疼痛","Pain")});
+   const pstem=L("次の動作のときの膝の痛みの程度は？","What amount of knee pain did you experience during:");
+   [["膝をひねる・軸にして回る","Twisting/pivoting on your knee"],["膝を完全に伸ばす","Straightening knee fully"],["膝を完全に曲げる","Bending knee fully"],["平らな場所を歩く","Walking on a flat surface"],["階段を上り下りする","Going up or down stairs"],["夜、寝ているとき","At night while in bed"],["座ったり横になっているとき","Sitting or lying"],["まっすぐ立っているとき","Standing upright"]].forEach((p,i)=>it.push({sub:"P",t:L(p[0],p[1]),opts:OPT.sev5,stem:i===0?pstem:undefined}));
+   const astem=L("膝が原因で、次の動作はどの程度困難でしたか?","What difficulty did you experience because of your knee during:");
+   [["階段を下りる","Descending stairs"],["階段を上る","Ascending stairs"],["座った状態から立ち上がる","Rising from sitting"],["立っている","Standing"],["床の物を拾うためにかがむ","Bending to floor / picking up an object"],["平らな場所を歩く","Walking on a flat surface"],["車の乗り降り","Getting in / out of a car"],["買い物に行く","Going shopping"],["靴下やストッキングを履く","Putting on socks / stockings"],["ベッドから起き上がる","Rising from bed"],["靴下やストッキングを脱ぐ","Taking off socks / stockings"],["ベッドで横になっている(寝返り・膝の位置の保持)","Lying in bed (turning over, maintaining knee position)"],["浴槽への出入り","Getting in / out of the bath"],["座っている","Sitting"],["トイレでの立ち座り","Getting on / off the toilet"],["重い家事(重い物の運搬、床磨きなど)","Heavy domestic duties (moving heavy boxes, scrubbing floors)"],["軽い家事(料理、掃除など)","Light domestic duties (cooking, dusting)"]].forEach((p,i)=>it.push({sub:"A",t:L(p[0],p[1]),opts:OPT.dif5,stem:i===0?astem:undefined}));
+   const spstem=L("膝が原因で、次のより高度な活動はどの程度困難でしたか?","What difficulty did you experience because of your knee during:");
+   [["しゃがみ込む","Squatting"],["走る","Running"],["ジャンプする","Jumping"],["患側の膝をひねる・軸にして回る","Twisting/pivoting on your injured knee"],["膝立ちになる","Kneeling"]].forEach((p,i)=>it.push({sub:"SP",t:L(p[0],p[1]),opts:OPT.dif5,stem:i===0?spstem:undefined}));
+   it.push({sub:"Q",t:L("膝の問題をどのくらいの頻度で意識しますか？","How often are you aware of your knee problem?"),opts:OPT.painfreq,stem:L("膝関連QOL","Knee-related quality of life")});
+   it.push({sub:"Q",t:L("膝に悪い可能性のある動作を避けるために、生活様式を変えていますか？","Have you modified your life style to avoid potentially damaging activities to your knee?"),opts:[[0,L("全く変えていない","Not at all")],[1,L("少し","Mildly")],[2,L("中等度に","Moderately")],[3,L("大きく","Severely")],[4,L("完全に変えている","Totally")]]});
+   it.push({sub:"Q",t:L("膝への自信のなさに、どの程度悩まされていますか？","How much are you troubled with lack of confidence in your knee?"),opts:[[0,L("全く悩まされていない","Not at all")],[1,L("少し","Mildly")],[2,L("中等度に","Moderately")],[3,L("かなり","Severely")],[4,L("極度に","Extremely")]]});
+   it.push({sub:"Q",t:L("全体として、膝によってどの程度の困難がありますか？","In general, how much difficulty do you have with your knee?"),opts:OPT.sev5});
+   return it;
+ })(),
+ compute(a){
+   const subs=[["P",L("疼痛","Pain")],["S",L("症状","Symptoms")],["A",L("日常生活","ADL")],["SP",L("スポーツ/レク","Sport/Rec")],["Q",L("QOL","QOL")]];
+   return subs.map(([k,lab])=>{
+     const idx=this.items.map((it,i)=>it.sub===k?i:-1).filter(i=>i>=0);
+     const vals=idx.map(i=>a[i]).filter(v=>v!==undefined&&v!==null);
+     if(vals.length<idx.length/2) return {key:k,label:lab,value:null,max:100};
+     const mean=vals.reduce((s,v)=>s+v,0)/vals.length;
+     return {key:k,label:lab,value:Math.round((100-mean*25)*10)/10,max:100};
+   });
+ },
+ partial:true,
+ bands:[{to:50,c:B.poor,l:L("重度","Severe")},{to:70,c:B.fair,l:L("中等度","Moderate")},{to:85,c:B.good,l:L("軽度","Mild")},{to:100,c:B.exc,l:L("良好","Good")}],
+ bandsNote:true,
+ interp(sc){
+   const v=Object.fromEntries(sc.map(s=>[s.key,s.value]));
+   const worst=sc.filter(s=>s.value!==null).sort((x,y)=>x.value-y.value)[0];
+   const ja=`各下位尺度は100点が「問題なし」を意味します。5尺度の中では「${t(worst.label)}」(${worst.value}点)が最も低く、介入・経過観察の焦点となります。若年活動例ではSport/RecとQOLが最も鋭敏で、変形性膝関節症・人工関節では疼痛とADLが主要評価項目です。`;
+   const en=`Each subscale scores 100 = no problems. The lowest subscale here is "${worst.label.en}" (${worst.value}), which is the focus for intervention and follow-up. Sport/Rec and QOL are the most responsive subscales in young active patients, while Pain and ADL are the key domains in osteoarthritis and arthroplasty.`;
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>MIC(最小重要変化): 各下位尺度で概ね8〜10点</li><li>ACL再建術後1年のPASS例: 疼痛≈89 / 症状≈57 / ADL≈100 / Sport≈75 / QOL≈63(Muller 2016)</li><li>TKA後の治療成功の目安としてKOOS-12やPASS閾値の報告あり</li></ul>","<b>Reference values:</b><ul><li>Minimal important change ≈8–10 points per subscale</li><li>PASS 1 yr after ACL reconstruction: Pain ≈89 / Symptoms ≈57 / ADL ≈100 / Sport ≈75 / QOL ≈63 (Muller 2016)</li><li>PASS thresholds after TKA reported for KOOS/KOOS-12</li></ul>"),
+},
+/* ============ OKS ============ */
+{
+ id:"oks",
+ name:L("Oxford Knee Score(OKS)","Oxford Knee Score (OKS)"),
+ short:"OKS",
+ time:3,
+ desc:L("人工膝関節置換術(TKA/UKA)の術前後評価のために開発された12項目の質問票。変形性膝関節症の重症度評価にも使用。0〜48点(高いほど良好)。","A 12-item questionnaire developed to assess knee arthroplasty (TKA/UKA) before and after surgery; also used to grade osteoarthritis severity. 0–48, higher = better."),
+ period:L("過去4週間の状態についてお答えください。","Answer for the past 4 weeks."),
+ items:[
+  {t:L("普段の膝の痛みをどう表現しますか？","How would you describe the pain you usually have from your knee?"),opts:[[4,L("痛みなし","None")],[3,L("ごく軽い","Very mild")],[2,L("軽い","Mild")],[1,L("中等度","Moderate")],[0,L("激しい","Severe")]]},
+  {t:L("膝のせいで、体を洗ったり拭いたりすることに支障がありましたか？","Have you had any trouble with washing and drying yourself because of your knee?"),opts:[[4,L("全く支障ない","No trouble at all")],[3,L("少し支障がある","Very little trouble")],[2,L("中等度の支障がある","Moderate trouble")],[1,L("かなり支障がある","Extreme difficulty")],[0,L("不可能","Impossible to do")]]},
+  {t:L("膝のせいで、車の乗り降りや公共交通機関の利用に支障がありましたか？","Have you had any trouble getting in and out of a car or using public transport because of your knee?"),opts:[[4,L("全く支障ない","No trouble at all")],[3,L("少し支障がある","Very little trouble")],[2,L("中等度の支障がある","Moderate trouble")],[1,L("かなり支障がある","Extreme difficulty")],[0,L("不可能","Impossible to do")]]},
+  {t:L("膝の痛みが強くなるまで、どのくらいの時間歩けますか？(杖の使用可)","For how long have you been able to walk before pain from your knee becomes severe? (with or without a stick)"),opts:[[4,L("痛みなし/60分以上","No pain / more than 60 min")],[3,L("16〜60分","16 to 60 min")],[2,L("5〜15分","5 to 15 min")],[1,L("家の周りのみ","Around the house only")],[0,L("全く歩けない(歩行時に激痛)","Not at all — severe pain on walking")]]},
+  {t:L("食事の後(テーブルに座った状態)から立ち上がるとき、膝の痛みはどの程度でしたか？","After a meal (sat at a table), how painful has it been to stand up from a chair because of your knee?"),opts:[[4,L("全く痛くない","Not at all painful")],[3,L("少し痛い","Slightly painful")],[2,L("中等度に痛い","Moderately painful")],[1,L("非常に痛い","Very painful")],[0,L("耐えられないほど痛い","Unbearable")]]},
+  {t:L("歩くときに、膝のせいで足を引きずっていましたか？","Have you been limping when walking because of your knee?"),opts:[[4,L("ほとんど/全くない","Rarely / never")],[3,L("時々、または歩き始めだけ","Sometimes, or just at first")],[2,L("しばしば(歩き始め以外でも)","Often, not just at first")],[1,L("ほとんどの時間","Most of the time")],[0,L("常に","All of the time")]]},
+  {t:L("膝立ちになり、その後立ち上がることができますか？","Could you kneel down and get up again afterwards?"),opts:[[4,L("容易にできる","Yes, easily")],[3,L("少し困難","With little difficulty")],[2,L("中等度に困難","With moderate difficulty")],[1,L("非常に困難","With extreme difficulty")],[0,L("できない","No, impossible")]]},
+  {t:L("夜、ベッドの中で膝の痛みに悩まされましたか？","Have you been troubled by pain from your knee in bed at night?"),opts:[[4,L("全くない","No nights")],[3,L("1〜2晩だけ","Only 1 or 2 nights")],[2,L("いくつかの晩","Some nights")],[1,L("ほとんどの晩","Most nights")],[0,L("毎晩","Every night")]]},
+  {t:L("膝の痛みは、普段の仕事(家事を含む)にどの程度支障をきたしましたか？","How much has pain from your knee interfered with your usual work (including housework)?"),opts:[[4,L("全く支障なし","Not at all")],[3,L("少し","A little bit")],[2,L("中等度","Moderately")],[1,L("大いに","Greatly")],[0,L("完全に支障","Totally")]]},
+  {t:L("膝が突然「ガクッ」と崩れそうな感覚がありましたか？","Have you felt that your knee might suddenly give way or let you down?"),opts:[[4,L("ほとんど/全くない","Rarely / never")],[3,L("時々、または歩き始めだけ","Sometimes, or just at first")],[2,L("しばしば","Often, not just at first")],[1,L("ほとんどの時間","Most of the time")],[0,L("常に","All of the time")]]},
+  {t:L("一人で日用品の買い物ができますか？","Could you do the household shopping on your own?"),opts:[[4,L("容易にできる","Yes, easily")],[3,L("少し困難","With little difficulty")],[2,L("中等度に困難","With moderate difficulty")],[1,L("非常に困難","With extreme difficulty")],[0,L("できない","No, impossible")]]},
+  {t:L("階段を1階分下りることができますか？","Could you walk down one flight of stairs?"),opts:[[4,L("容易にできる","Yes, easily")],[3,L("少し困難","With little difficulty")],[2,L("中等度に困難","With moderate difficulty")],[1,L("非常に困難","With extreme difficulty")],[0,L("できない","No, impossible")]]},
+ ],
+ compute(a){
+   const sum=this.items.reduce((s,_,i)=>s+a[i],0);
+   return [{key:"total",label:L("OKSスコア","OKS score"),value:sum,max:48}];
+ },
+ bands:[{to:20,c:B.poor,l:L("重度","Severe")},{to:30,c:B.fair,l:L("中〜重度","Mod–severe")},{to:40,c:B.good,l:L("軽〜中等度","Mild–mod")},{to:48,c:B.exc,l:L("良好","Satisfactory")}],
+ interp(sc){
+   const s=sc[0].value;
+   const ja= s>=40?"満足すべき関節機能を示すスコアです(40点以上)。":
+             s>=30?"軽度〜中等度の関節症状を示唆します。保存療法の継続・強化が一般的な対応です。":
+             s>=20?"中等度〜重度の症状を示唆します。単独での判断はできませんが、手術的治療の相談対象となり得る範囲です。":
+             "重度の関節症状を示唆するスコアです(20点未満)。手術的治療を含めた治療方針の検討が推奨されます。";
+   const en= s>=40?"Indicates satisfactory joint function (≥40).":
+             s>=30?"Suggests mild-to-moderate symptoms; continuing or intensifying conservative care is the usual response.":
+             s>=20?"Suggests moderate-to-severe symptoms; this range may warrant a surgical consultation, though never on the score alone.":
+             "Suggests severe arthritis symptoms (<20); evaluation for treatment including surgery is recommended.";
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>区分の目安: 40–48 良好 / 30–39 軽〜中等度 / 20–29 中〜重度 / 0–19 重度(Kalairajah 2005)</li><li>TKA後のMCID: 約5点 / PASSの報告値: 術後1年で30点前後</li><li>使用にはOxford University Innovationのライセンス規定があります(研究・商用)</li></ul>","<b>Reference values:</b><ul><li>Grades: 40–48 satisfactory / 30–39 mild-moderate / 20–29 moderate-severe / 0–19 severe (Kalairajah 2005)</li><li>MCID after TKA ≈5; reported PASS ≈30 at 1 yr</li><li>Licensed by Oxford University Innovation (research/commercial use)</li></ul>"),
+},
+/* ============ FJS-12 ============ */
+{
+ id:"fjs",
+ name:L("Forgotten Joint Score(FJS-12)","Forgotten Joint Score (FJS-12)"),
+ short:"FJS-12",
+ time:3,
+ desc:L("「人工関節を日常生活でどれだけ意識しないか(忘れられるか)」を測る12項目の質問票。天井効果が小さく、良好例同士の比較に優れます。人工膝関節(TKA/UKA)術後の評価に使用。0〜100点(高いほど良好=関節を忘れている)。","A 12-item questionnaire measuring how much patients are able to 'forget' their artificial joint in daily life. Its low ceiling effect discriminates well among good outcomes. Used after TKA/UKA. 0–100, higher = better (more forgotten)."),
+ period:L("日常生活の次の場面で、ご自分の人工関節をどの程度意識しますか？","Are you aware of your artificial joint in the following situations?"),
+ items:[["夜、ベッドの中で","in bed at night"],["椅子に1時間以上座っているとき","when sitting on a chair for more than one hour"],["15分以上歩くとき","when walking for more than 15 minutes"],["入浴・シャワーのとき","when taking a bath or shower"],["車で移動するとき","when travelling in a car"],["階段を上るとき","when climbing stairs"],["でこぼこ道を歩くとき","when walking on uneven ground"],["低い椅子から立ち上がるとき","when standing up from a low-sitting position"],["長時間立っているとき","when standing for long periods of time"],["家事や庭仕事をするとき","when doing housework or gardening"],["散歩やハイキングのとき","when taking a walk or hiking"],["好きなスポーツをするとき","when doing your favourite sport"]].map((p,i)=>({t:L(p[0],p[1]),opts:OPT.fjs5})),
+ compute(a){
+   const vals=this.items.map((_,i)=>a[i]).filter(v=>v!==undefined&&v!==null);
+   if(vals.length<8) return [{key:"total",label:L("FJS-12スコア","FJS-12 score"),value:null,max:100}];
+   const mean=vals.reduce((s,v)=>s+v,0)/vals.length;
+   return [{key:"total",label:L("FJS-12スコア","FJS-12 score"),value:Math.round((100-mean*25)*10)/10,max:100}];
+ },
+ partial:true,
+ bands:[{to:40,c:B.poor,l:L("低い","Low")},{to:70,c:B.fair,l:L("中等度","Moderate")},{to:100,c:B.exc,l:L("良好","Good")}],
+ bandsNote:true,
+ interp(sc){
+   const s=sc[0].value;
+   const ja= s>=70?"人工関節をほとんど意識せずに生活できている良好な状態です。TKA後の良好例の報告値(術後1〜2年で60〜80点台)に達しています。":
+             s>=40?"人工関節をある程度意識する場面が残っています。TKA後の平均的な範囲ですが、どの場面(項目)で意識するかを確認すると介入の手がかりになります。":
+             "多くの場面で人工関節を意識している状態です。疼痛・可動域・筋力・アライメントなど原因の評価と、リハビリ強化の検討が推奨されます。";
+   const en= s>=70?"The joint is largely 'forgotten' in daily life — within the range reported for good TKA outcomes (60s–80s at 1–2 yrs).":
+             s>=40?"Awareness of the joint remains in some situations — an average range after TKA. Reviewing which items score low can guide intervention.":
+             "The joint is noticed in most situations. Assessment of causes (pain, motion, strength, alignment) and intensified rehabilitation are recommended.";
+   return L(ja,en);
+ },
+ refs:L("<b>参考値:</b><ul><li>TKA後1年の平均: 概ね55〜70点台(報告により幅)</li><li>MCID: TKA後で約10〜14点</li><li>回答は8項目以上で採点可(4項目まで欠落許容)。商用利用はライセンスが必要</li></ul>","<b>Reference values:</b><ul><li>Mean ≈55–70s at 1 yr after TKA (varies between reports)</li><li>MCID ≈10–14 after TKA</li><li>Scoring valid with ≥8 items answered (up to 4 missing). Commercial use requires a licence</li></ul>"),
+},
+];
+const QMAP=Object.fromEntries(QS.map(q=>[q.id,q]));
+
+/* ---------- diseases & procedures ---------- */
+const DISEASES=[
+ {id:"acl",name:L("前十字靱帯(ACL)損傷","ACL injury"),procs:[
+   ["aclr",L("ACL再建術","ACL reconstruction")],["aclrep",L("ACL修復術","ACL repair")],
+   ["aclr_m",L("ACL再建+半月板手術","ACLR + meniscus surgery")],["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+ {id:"meniscus",name:L("半月板損傷","Meniscal injury"),procs:[
+   ["mrepair",L("半月板縫合術","Meniscal repair")],["mpart",L("半月板部分切除術","Partial meniscectomy")],
+   ["mcent",L("半月板制動術(centralization)","Meniscal centralization")],["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+ {id:"oa",name:L("変形性膝関節症","Knee osteoarthritis"),procs:[
+   ["owhto",L("高位脛骨骨切り術(OWHTO)","Open-wedge HTO")],["dfo",L("大腿骨遠位骨切り術(DFO)","Distal femoral osteotomy")],
+   ["tka",L("人工膝関節全置換術(TKA)","Total knee arthroplasty")],["uka",L("人工膝関節単顆置換術(UKA)","Unicompartmental knee arthroplasty")],
+   ["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+ {id:"cartilage",name:L("軟骨損傷・離断性骨軟骨炎","Cartilage lesion / OCD"),procs:[
+   ["oat",L("骨軟骨柱移植術","Osteochondral autograft transfer")],["aci",L("自家培養軟骨移植術","Autologous chondrocyte implantation")],
+   ["bms",L("骨髄刺激法(ドリリング等)","Bone marrow stimulation")],["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+ {id:"pf",name:L("膝蓋骨脱臼・膝蓋大腿関節障害","Patellar instability / PF disorder"),procs:[
+   ["mpfl",L("MPFL再建術","MPFL reconstruction")],["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+ {id:"other",name:L("その他の膝疾患","Other knee condition"),procs:[["surg",L("手術あり","Surgery")],["cons",L("保存療法(手術なし)","Conservative (no surgery)")]]},
+];
+
+const WHY={
+ ikdc_acl:L("ACL術後評価の国際標準。症状・機能・活動を1つのスコアで総合評価","International standard after ACL surgery; one composite score of symptoms, function and activity"),
+ aclrsi:L("スポーツ復帰への心理的準備性を評価。復帰判断・再受傷リスクの補助指標","Psychological readiness for return to sport; supports RTS decisions and re-injury risk assessment"),
+ koos_y:L("5つの下位尺度で症状〜QOLを分けて評価。長期の経過観察に最適","Five subscales separate symptoms from QOL; ideal for long-term follow-up"),
+ lysholm:L("簡便な古典的機能スコア。経時比較・文献比較に有用","Quick classic function score; useful for serial and literature comparison"),
+ tegner:L("活動レベルの指標。受傷前レベルとの比較で復帰度を評価","Activity level; compare with pre-injury level to gauge recovery"),
+ koos_men:L("半月板損傷・術後で妥当性検証済み。軟骨・OAへの進行も追える","Validated in meniscal injury/surgery; also tracks progression toward OA"),
+ ikdc_men:L("半月板損傷を含む膝疾患全般で使用可能な総合スコア","Composite score applicable across knee disorders including meniscal injury"),
+ koos_oa:L("変形性膝関節症・骨切り術の標準的評価。疼痛・ADL・QOLを分離して評価","Standard for OA and osteotomy; separates pain, ADL and QOL"),
+ oks_oa:L("関節症の重症度と手術適応の議論に使われる簡便な12項目","Concise 12 items used to grade severity and inform surgical discussion"),
+ oks_tka:L("TKA/UKA術前後評価のために開発された標準PROM","The standard PROM developed for knee arthroplasty"),
+ fjs:L("「人工関節を忘れられるか」を評価。天井効果が小さく良好例の比較に強い","Measures how far the joint is 'forgotten'; low ceiling effect discriminates good outcomes"),
+ koos_tka:L("疼痛・ADL中心にTKA後の状態を多面的に評価","Multidimensional assessment after TKA, centred on pain and ADL"),
+ ikdc_cart:L("軟骨修復術後の推奨PROM(ICRS推奨)","Recommended PROM after cartilage repair (ICRS)"),
+ tegner_ost:L("骨切り術後の活動性回復の指標","Tracks activity recovery after osteotomy"),
+};
+function recommendations(diseaseId,procId){
+  const r=(qid,why)=>({qid,why});
+  if(diseaseId==="acl") return [r("ikdc",WHY.ikdc_acl),r("aclrsi",WHY.aclrsi),r("koos",WHY.koos_y),r("lysholm",WHY.lysholm),r("tegner",WHY.tegner)];
+  if(diseaseId==="meniscus") return [r("ikdc",WHY.ikdc_men),r("koos",WHY.koos_men),r("lysholm",WHY.lysholm),r("tegner",WHY.tegner)];
+  if(diseaseId==="oa"){
+    if(procId==="tka"||procId==="uka") return [r("oks",WHY.oks_tka),r("fjs",WHY.fjs),r("koos",WHY.koos_tka)];
+    if(procId==="owhto"||procId==="dfo") return [r("koos",WHY.koos_oa),r("oks",WHY.oks_oa),r("lysholm",WHY.lysholm),r("tegner",WHY.tegner_ost)];
+    return [r("koos",WHY.koos_oa),r("oks",WHY.oks_oa),r("tegner",WHY.tegner)];
+  }
+  if(diseaseId==="cartilage") return [r("ikdc",WHY.ikdc_cart),r("koos",WHY.koos_men),r("lysholm",WHY.lysholm),r("tegner",WHY.tegner)];
+  if(diseaseId==="pf") return [r("ikdc",WHY.ikdc_men),r("koos",WHY.koos_y),r("lysholm",WHY.lysholm)];
+  return QS.map(q=>r(q.id,null));
+}
+
+/* ---------- state & storage ---------- */
+function loadLS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let patient=loadLS("sq_patient",{disease:"",injuryDate:"",proc:"",surgDate:""});
+let records=loadLS("sq_records",[]);
+let view={tab:"home",qid:null,direct:false,research:false};
+let answers={};   // qid -> array
+let results={};   // qid -> computed result (kept until re-scored)
+let resInfo=loadLS("sq_resinfo",{surgDate:"",side:"",timepoint:""});
+let resResults=null; // {ikdc:{scores,interp}, aclrsi:{scores,interp}}
+
+/* ---------- timing helpers ---------- */
+function monthsBetween(d1,d2){return Math.floor((d2-d1)/(1000*60*60*24*30.44));}
+function timingInfo(){
+  const now=new Date();
+  const hasSurg=patient.proc!=="cons" && patient.surgDate;
+  if(hasSurg){
+    const sd=new Date(patient.surgDate);
+    if(sd>now) return {kind:"pre",label:S.preOp[lang]||t(S.preOp)};
+    const m=Math.max(0,monthsBetween(sd,now));
+    return {kind:"post",label:S.postOp(S.mo(Math.max(1,m)))};
+  }
+  if(patient.proc && patient.proc!=="cons" && !patient.surgDate) return {kind:"pre",label:t(S.preOp)};
+  if(patient.injuryDate){
+    const m=Math.max(0,monthsBetween(new Date(patient.injuryDate),now));
+    return {kind:"inj",label:S.postInj(S.mo(Math.max(1,m)))};
+  }
+  return null;
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* ---------- rendering ---------- */
+function render(){
+  document.getElementById("langbtn").textContent=lang==="ja"?"EN":"日本語";
+  document.getElementById("tagline").textContent=t(S.tagline);
+  document.getElementById("disc").innerHTML=esc(t(S.disclaimer))+"<br>"+esc(t(S.storageNote));
+  const tabs=document.getElementById("tabs");
+  tabs.innerHTML="";
+  [["home",S.tabHome],["list",S.tabList],["rec",S.tabRec]].forEach(([id,lab])=>{
+    const b=document.createElement("button");
+    b.textContent=t(lab);
+    b.className=(view.tab===id&&!view.qid)?"on":(view.tab===id?"on":"");
+    b.onclick=()=>{view={tab:id,qid:null,direct:false};render();window.scrollTo(0,0)};
+    tabs.appendChild(b);
+  });
+  const app=document.getElementById("app");
+  if(view.research) app.innerHTML=researchScreen();
+  else if(view.qid) app.innerHTML=qScreen(view.qid);
+  else if(view.tab==="home") app.innerHTML=homeScreen();
+  else if(view.tab==="list") app.innerHTML=listScreen();
+  else app.innerHTML=recScreen();
+  bindEvents();
+}
+
+function homeScreen(){
+  const dis=DISEASES.find(d=>d.id===patient.disease);
+  const ti=timingInfo();
+  let html="";
+  html+=`<section class="card"><h2>${esc(t(S.caseInfo))}</h2><p class="sub">${esc(t(S.caseSub))}</p>
+  <div class="formgrid">
+    <div class="field"><label>${esc(t(S.disease))}</label><select id="f_dis"><option value=""></option>${DISEASES.map(d=>`<option value="${d.id}" ${patient.disease===d.id?"selected":""}>${esc(t(d.name))}</option>`).join("")}</select></div>
+    <div class="field"><label>${esc(t(S.injury))}</label><input id="f_inj" type="date" value="${esc(patient.injuryDate)}"></div>
+    <div class="field"><label>${esc(t(S.procedure))}</label><select id="f_proc" ${dis?"":"disabled"}><option value=""></option>${dis?dis.procs.map(p=>`<option value="${p[0]}" ${patient.proc===p[0]?"selected":""}>${esc(t(p[1]))}</option>`).join(""):""}</select></div>
+    ${patient.proc!=="cons"?`<div class="field"><label>${esc(t(S.surgDate))}</label><input id="f_surg" type="date" value="${esc(patient.surgDate)}"></div>`:""}
+  </div>
+  ${ti?`<div class="ctx"><span class="chip ${ti.kind==="post"?"post":ti.kind==="pre"?"pre":"neutral"}">${esc(t(S.timingLabel))}: ${esc(ti.label)}</span></div>`:""}
+  <div class="rowend"><button class="btn" id="b_clear">${esc(t(S.clear))}</button><button class="btn primary" id="b_save">${esc(t(S.save))}</button></div>
+  </section>`;
+  if(patient.disease){
+    const recs=recommendations(patient.disease,patient.proc);
+    html+=`<section class="card"><h2>${esc(t(S.recTitle))}</h2><p class="sub">${esc(t(S.recSub))}${patient.disease==="pf"?" "+esc(t(S.kujalaNote)):""}</p>
+    <div class="reclist">${recs.map(r=>{
+      const q=QMAP[r.qid];
+      return `<div class="recitem"><div class="info"><div class="qname">${esc(t(q.name))}<span class="tag">${q.items.length} ${esc(t(S.items))} · ${t(S.min)}${q.time}${esc(t(S.minU))}</span></div>${r.why?`<div class="why">${esc(t(r.why))}</div>`:""}</div>
+      <button class="btn primary small" data-start="${q.id}">${esc(t(S.answer))}</button></div>`;
+    }).join("")}</div></section>`;
+  }
+  return html;
+}
+
+function listScreen(){
+  return `<section class="card"><h2>${esc(t(S.listTitle))}</h2><p class="sub">${esc(t(S.listSub))}</p></section>`+
+  QS.map(q=>`<div class="qcard"><div class="head"><span class="qtitle">${esc(t(q.name))}</span><span class="meta">${q.items.length} ${esc(t(S.items))} · ${t(S.min)}${q.time}${esc(t(S.minU))}</span></div>
+  <div class="desc">${esc(t(q.desc))}</div>
+  <button class="btn primary small" data-startd="${q.id}">${esc(t(S.answer))}</button></div>`).join("");
+}
+
+function qScreen(qid){
+  const q=QMAP[qid];
+  const a=answers[qid]||(answers[qid]=[]);
+  const answered=q.items.filter((_,i)=>a[i]!==undefined).length;
+  let itemsHtml="";
+  q.items.forEach((it,i)=>{
+    const stem=it.stem?`<div class="qnum" style="margin:14px 0 2px;font-size:12px">${esc(t(it.stem))}</div>`:"";
+    let body="";
+    if(it.scale){
+      body=`<div class="scale">${Array.from({length:11},(_,v)=>`<button data-q="${i}" data-v="${v}" class="${a[i]===v?"sel":""}">${v}</button>`).join("")}</div>
+      <div class="anchors"><span>0 = ${esc(t(it.scale.lo))}</span><span>10 = ${esc(t(it.scale.hi))}</span></div>`;
+    } else {
+      body=`<div class="opts">${it.opts.map(([v,lab])=>`<label class="opt ${a[i]===v?"sel":""}"><input type="radio" name="q${i}" ${a[i]===v?"checked":""} data-q="${i}" data-v="${v}"><span>${esc(t(lab))}</span></label>`).join("")}</div>`;
+    }
+    itemsHtml+=stem+`<div class="item" id="item${i}"><div class="qnum">Q${i+1} / ${q.items.length}</div><div class="qtext">${esc(t(it.t))}</div>${body}</div>`;
+  });
+  const res=results[qid];
+  return `<div class="backrow"><button class="btn ghost" id="b_back">${esc(t(S.back))}</button></div>
+  <section class="card"><h2>${esc(t(q.name))}</h2>
+  <p class="sub">${esc(t(q.desc))}</p>
+  ${view.direct?`<p class="sub" style="color:var(--accent);font-weight:500">${esc(t(S.directNote))}</p>`:""}
+  <p class="sub" style="font-weight:700;color:var(--ink)">${esc(t(q.period))}</p>
+  <div class="progress"><div class="pbar"><div style="width:${answered/q.items.length*100}%"></div></div><span class="pnum">${answered} / ${q.items.length}</span></div>
+  ${itemsHtml}
+  <div class="rowend"><button class="btn primary" id="b_score">${esc(t(S.score))}</button></div>
+  <div id="warn" class="sub" style="color:var(--danger);text-align:right;margin-top:6px"></div>
+  ${res?resultHtml(q,res):""}
+  </section>`;
+}
+
+function meterHtml(q,val,max){
+  if(!q.bands){
+    const pct=val/max*100;
+    return `<div class="meter"><div class="segs"><div class="seg" style="flex:1;background:var(--accent-soft)"></div></div><div class="mark" style="left:calc(${pct}% - 2px)"></div></div>
+    <div class="meterlab"><span>0</span><span style="margin-left:auto">${max}</span></div>`;
+  }
+  let prev=0, segs="", labs="";
+  q.bands.forEach(b=>{
+    const w=(b.to-prev)/max*100;
+    segs+=`<div class="seg" style="flex:0 0 calc(${w}% - 2px);background:${b.c};opacity:.55"></div>`;
+    labs+=`<span style="flex:0 0 calc(${w}% - 2px)">${esc(t(b.l))}</span>`;
+    prev=b.to;
+  });
+  const pct=Math.min(100,Math.max(0,val/max*100));
+  return `<div class="meter"><div class="segs">${segs}</div><div class="mark" style="left:calc(${pct}% - 2px)"></div></div><div class="meterlab">${labs}</div>`;
+}
+function bandOf(q,val){
+  if(!q.bands||val===null) return null;
+  for(const b of q.bands){ if(val<b.to||b===q.bands[q.bands.length-1]) return b; }
+  return q.bands[q.bands.length-1];
+}
+function resultHtml(q,res){
+  const ti=view.direct?null:timingInfo();
+  let rows="";
+  res.scores.forEach(s=>{
+    if(s.value===null){rows+=`<div class="scorerow"><div class="scorehead"><span class="scorename">${esc(t(s.label))}</span><span class="scoreval"><small>${lang==="ja"?"未算出(回答不足)":"Not scored (insufficient answers)"}</small></span></div></div>`;return;}
+    const b=bandOf(q,s.value);
+    rows+=`<div class="scorerow">
+      <div class="scorehead"><span class="scorename">${esc(t(s.label))}</span>
+      ${b?`<span class="verdict" style="color:${b.c}">${esc(t(b.l))}</span>`:""}</div>
+      <div class="scoreval">${s.value}<small> / ${s.max}</small></div>
+      ${meterHtml(q,s.value,s.max)}
+    </div>`;
+  });
+  return `<div class="result"><h3>${esc(t(S.resultTitle))}</h3>
+  ${ti?`<div class="ctx" style="margin:0 0 14px"><span class="chip ${ti.kind==="post"?"post":ti.kind==="pre"?"pre":"neutral"}">${esc(ti.label)}</span></div>`:""}
+  ${rows}
+  ${q.bandsNote?`<p class="note">${esc(t(S.noBands))}</p>`:""}
+  <div class="interp"><p>${esc(t(res.interp))}</p></div>
+  <div class="refbox">${t(q.refs)}</div>
+  <div class="rowend"><button class="btn primary" id="b_saverec">${esc(t(S.saveRec))}</button></div>
+  <div id="savemsg" class="sub" style="text-align:right;color:var(--accent);margin-top:6px"></div>
+  </div>`;
+}
+
+function recScreen(){
+  if(!records.length) return `<section class="card"><h2>${esc(t(S.recsTitle))}</h2><p class="sub">${esc(t(S.recsSub))}</p><div class="empty">${esc(t(S.noRecs))}</div></section>`;
+  const sorted=[...records].sort((a,b)=>b.ts-a.ts);
+  const prevOf=(rec)=>{
+    const same=records.filter(r=>r.qid===rec.qid&&r.ts<rec.ts).sort((a,b)=>b.ts-a.ts);
+    return same[0]||null;
+  };
+  const rows=sorted.map(rec=>{
+    const q=QMAP[rec.qid];
+    const prev=prevOf(rec);
+    const main=rec.scores.find(s=>s.value!==null);
+    let delta="";
+    if(prev&&main){
+      const pmain=prev.scores.find(s=>s.key===main.key&&s.value!==null);
+      if(pmain){const d=Math.round((main.value-pmain.value)*10)/10;
+        delta=`<span class="delta ${d>0?"up":d<0?"down":""}">${d>0?"+":""}${d}</span>`;}
+    }
+    const scoreTxt=rec.scores.filter(s=>s.value!==null).map(s=>rec.scores.length>1?`${esc(t(s.label))} ${s.value}`:`${s.value} / ${s.max}`).join(" · ");
+    const d=new Date(rec.ts);
+    const ds=`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}`;
+    return `<tr><td>${ds}</td>
+    <td>${esc(q?q.short:rec.qid)}</td>
+    <td>${rec.timing?`<span class="chip ${rec.timingKind==="post"?"post":rec.timingKind==="pre"?"pre":"neutral"}" style="font-size:11px">${esc(rec.timing)}</span>`:"—"}</td>
+    <td class="score">${scoreTxt}</td><td>${delta||"—"}</td>
+    <td><button class="btn ghost small danger" data-del="${rec.ts}">${esc(t(S.del))}</button></td></tr>`;
+  }).join("");
+  return `<section class="card"><div class="rechead"><h2 style="margin:0">${esc(t(S.recsTitle))}</h2>
+  <span><button class="btn small" id="b_csv">${esc(t(S.csv))}</button> <button class="btn small danger" id="b_delall">${esc(t(S.delAll))}</button></span></div>
+  <p class="sub">${esc(t(S.recsSub))}</p>
+  <div class="tblwrap"><table class="recs"><thead><tr><th>${esc(t(S.thDate))}</th><th>${esc(t(S.thQ))}</th><th>${esc(t(S.thTiming))}</th><th>${esc(t(S.thScore))}</th><th>${esc(t(S.thDelta))}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  </section>`;
+}
+
+/* ---------- research mode (ACL pre/post questionnaire) ---------- */
+const R_QIDS=["ikdc","aclrsi"];
+const TIMEPOINTS=[["pre",()=>t(S.tpPre)],["3",()=>S.tpPost(3)],["6",()=>S.tpPost(6)],["9",()=>S.tpPost(9)],["12",()=>S.tpPost(12)],["24",()=>S.tpPost(24)],["other",()=>t(S.tpOther)]];
+function tpLabel(v){const e=TIMEPOINTS.find(x=>x[0]===v);return e?e[1]():"";}
+function tpLabelBoth(v){
+  const cur=lang;let ja,en;
+  lang="ja";ja=tpLabel(v);lang="en";en=tpLabel(v);lang=cur;
+  return {ja,en};
+}
+
+function researchItemsHtml(qid){
+  const q=QMAP[qid];
+  const key="r_"+qid;
+  const a=answers[key]||(answers[key]=[]);
+  let html="";
+  q.items.forEach((it,i)=>{
+    const stem=it.stem?`<div class="qnum" style="margin:14px 0 2px;font-size:12px">${esc(t(it.stem))}</div>`:"";
+    let body="";
+    if(it.scale){
+      body=`<div class="scale">${Array.from({length:11},(_,v)=>`<button data-rq="${key}" data-q="${i}" data-v="${v}" class="${a[i]===v?"sel":""}">${v}</button>`).join("")}</div>
+      <div class="anchors"><span>0 = ${esc(t(it.scale.lo))}</span><span>10 = ${esc(t(it.scale.hi))}</span></div>`;
+    } else {
+      body=`<div class="opts">${it.opts.map(([v,lab])=>`<label class="opt ${a[i]===v?"sel":""}"><input type="radio" name="${key}_q${i}" ${a[i]===v?"checked":""} data-rq="${key}" data-q="${i}" data-v="${v}"><span>${esc(t(lab))}</span></label>`).join("")}</div>`;
+    }
+    html+=stem+`<div class="item" id="${key}_item${i}"><div class="qnum">Q${i+1} / ${q.items.length}</div><div class="qtext">${esc(t(it.t))}</div>${body}</div>`;
+  });
+  return html;
+}
+
+function researchScreen(){
+  const total=R_QIDS.reduce((s,id)=>s+QMAP[id].items.length,0);
+  const done=R_QIDS.reduce((s,id)=>s+(answers["r_"+id]||[]).filter(v=>v!==undefined&&v!==null).length,0);
+  let html=`<div class="backrow"><button class="btn ghost" id="b_back">${esc(t(S.back))}</button></div>
+  <section class="card"><h2>${esc(t(S.resTitle))}</h2><p class="sub">${esc(t(S.resDesc))}</p>
+  <h2 style="font-size:15px;margin-top:8px">${esc(t(S.resInfo))}</h2>
+  <div class="formgrid" style="margin-top:8px">
+    <div class="field"><label>${esc(t(S.surgDate))}</label><input id="r_surg" type="date" value="${esc(resInfo.surgDate)}"></div>
+    <div class="field"><label>${esc(t(S.side))}</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn ${resInfo.side==="R"?"primary":""}" data-side="R" style="flex:1">${esc(t(S.sideR))}</button>
+        <button class="btn ${resInfo.side==="L"?"primary":""}" data-side="L" style="flex:1">${esc(t(S.sideL))}</button>
+      </div></div>
+    <div class="field"><label>${esc(t(S.timepoint))}</label><select id="r_tp"><option value=""></option>${TIMEPOINTS.map(([v,f])=>`<option value="${v}" ${resInfo.timepoint===v?"selected":""}>${esc(f())}</option>`).join("")}</select></div>
+  </div></section>`;
+  R_QIDS.forEach(qid=>{
+    const q=QMAP[qid];
+    html+=`<section class="card"><h2>${esc(t(q.name))}</h2>
+    <p class="sub" style="font-weight:700;color:var(--ink)">${esc(t(q.period))}</p>
+    ${researchItemsHtml(qid)}</section>`;
+  });
+  html+=`<section class="card">
+  <div class="progress" style="position:static;background:none;padding:0 0 10px"><div class="pbar"><div style="width:${done/total*100}%"></div></div><span class="pnum">${done} / ${total}</span></div>
+  <div class="rowend"><button class="btn primary" id="b_rscore">${esc(t(S.score))}</button></div>
+  <div id="warn" class="sub" style="color:var(--danger);text-align:right;margin-top:6px"></div>
+  ${resResults?researchResultHtml():""}
+  </section>`;
+  return html;
+}
+
+function researchResultHtml(){
+  const tp=tpLabel(resInfo.timepoint);
+  let rows="";
+  R_QIDS.forEach(qid=>{
+    const q=QMAP[qid];
+    const r=resResults[qid];
+    const s=r.scores[0];
+    const b=bandOf(q,s.value);
+    rows+=`<div class="scorerow">
+      <div class="scorehead"><span class="scorename">${esc(t(s.label))}</span>
+      ${b?`<span class="verdict" style="color:${b.c}">${esc(t(b.l))}</span>`:""}</div>
+      <div class="scoreval">${s.value}<small> / ${s.max}</small></div>
+      ${meterHtml(q,s.value,s.max)}
+      <div class="interp" style="margin-top:10px"><p>${esc(t(r.interp))}</p></div>
+    </div>`;
+  });
+  return `<div class="result"><h3>${esc(t(S.resultTitle))}</h3>
+  <div class="ctx" style="margin:0 0 14px">
+    <span class="chip ${resInfo.timepoint==="pre"?"pre":"post"}">${esc(tp)}</span>
+    ${resInfo.side?`<span class="chip neutral">${esc(t(S.side))}: ${esc(resInfo.side==="R"?t(S.sideR):t(S.sideL))}</span>`:""}
+    ${resInfo.surgDate?`<span class="chip neutral">${esc(t(S.surgDate))}: ${esc(resInfo.surgDate)}</span>`:""}
+  </div>
+  ${rows}
+  <div class="rowend"><button class="btn" id="b_rsave">${esc(t(S.saveRec))}</button><button class="btn primary" id="b_rpdf">${esc(t(S.pdfSave))}</button></div>
+  <div id="savemsg" class="sub" style="text-align:right;color:var(--accent);margin-top:6px"></div>
+  </div>`;
+}
+
+/* ---- PDF report ---- */
+function wrapText(ctx,text,x,y,maxW,lh){
+  let line="",yy=y;
+  for(const ch of text){
+    if(ch==="\n"){ctx.fillText(line,x,yy);line="";yy+=lh;continue;}
+    const test=line+ch;
+    if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,x,yy);line=ch;yy+=lh;}
+    else line=test;
+  }
+  if(line)ctx.fillText(line,x,yy);
+  return yy+lh;
+}
+function drawReport(){
+  const W=1240,H=1754,M=90;
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const ctx=cv.getContext("2d");
+  const F='"Noto Sans JP","Hiragino Sans",sans-serif';
+  ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0F766E";ctx.fillRect(0,0,W,14);
+  let y=M+20;
+  ctx.fillStyle="#1B2A2F";
+  ctx.font="bold 44px "+F;
+  ctx.fillText(t(S.reportTitle),M,y);y+=34;
+  ctx.font="24px "+F;ctx.fillStyle="#7C8D93";
+  ctx.fillText("ScoreQ",M,y);y+=54;
+  const today=new Date();
+  const ds=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,"0")}/${String(today.getDate()).padStart(2,"0")}`;
+  ctx.font="28px "+F;ctx.fillStyle="#1B2A2F";
+  const info=[
+    [t(S.evalDate),ds],
+    [t(S.timepoint),tpLabel(resInfo.timepoint)],
+    [t(S.side),resInfo.side?(resInfo.side==="R"?t(S.sideR):t(S.sideL)):"—"],
+    [t(S.surgDate),resInfo.surgDate||"—"],
+  ];
+  info.forEach(([k,v])=>{
+    ctx.fillStyle="#7C8D93";ctx.fillText(k,M,y);
+    ctx.fillStyle="#1B2A2F";ctx.fillText(String(v),M+330,y);
+    y+=44;
+  });
+  y+=20;
+  R_QIDS.forEach(qid=>{
+    const q=QMAP[qid];
+    const r=resResults[qid];
+    const s=r.scores[0];
+    const b=bandOf(q,s.value);
+    ctx.strokeStyle="#DFE8E6";ctx.beginPath();ctx.moveTo(M,y);ctx.lineTo(W-M,y);ctx.stroke();
+    y+=52;
+    ctx.font="bold 32px "+F;ctx.fillStyle="#0F766E";
+    ctx.fillText(t(q.name),M,y);y+=64;
+    ctx.font="bold 64px "+F;ctx.fillStyle="#1B2A2F";
+    const scoreTxt=`${s.value}`;
+    ctx.fillText(scoreTxt,M,y);
+    const sw=ctx.measureText(scoreTxt).width;
+    ctx.font="28px "+F;ctx.fillStyle="#7C8D93";
+    ctx.fillText(` / ${s.max}`,M+sw+8,y);
+    if(b){
+      const bandColors={ "var(--band-poor)":"#B3432F","var(--band-fair)":"#A86E12","var(--band-good)":"#5B8A3C","var(--band-exc)":"#177A66" };
+      ctx.font="bold 30px "+F;ctx.fillStyle=bandColors[b.c]||"#1B2A2F";
+      ctx.fillText(t(b.l),M+sw+140,y);
+    }
+    y+=30;
+    // meter
+    const mw=W-2*M,mh=18,mx=M;
+    let prev=0;
+    (q.bands||[{to:s.max,c:"var(--band-exc)"}]).forEach(bb=>{
+      const bandColors={"var(--band-poor)":"#E5C4BC","var(--band-fair)":"#E8D9B8","var(--band-good)":"#CBDDBD","var(--band-exc)":"#B8DCD3"};
+      ctx.fillStyle=bandColors[bb.c]||"#DCEFEB";
+      const x0=mx+prev/s.max*mw, x1=mx+bb.to/s.max*mw;
+      ctx.fillRect(x0,y,x1-x0-3,mh);
+      prev=bb.to;
+    });
+    ctx.fillStyle="#1B2A2F";
+    ctx.fillRect(mx+Math.min(Math.max(s.value/s.max*mw-3,0),mw-6),y-6,6,mh+12);
+    y+=mh+44;
+    ctx.font="26px "+F;ctx.fillStyle="#1B2A2F";
+    y=wrapText(ctx,t(r.interp),M,y,W-2*M,40);
+    y+=8;
+    // raw answers
+    const a=answers["r_"+qid];
+    const raw=q.items.map((it,i)=>`Q${i+1}=${a[i]}`).join("  ");
+    ctx.font="22px "+F;ctx.fillStyle="#7C8D93";
+    y=wrapText(ctx,`${t(S.answers)}: ${raw}`,M,y,W-2*M,32);
+    y+=18;
+  });
+  ctx.font="22px "+F;ctx.fillStyle="#7C8D93";
+  const foot=lang==="ja"
+    ?"本結果は参考情報です。診断・治療方針の決定は担当医にご相談ください。 — ScoreQ"
+    :"These results are for reference only; consult the treating physician for diagnosis and treatment. — ScoreQ";
+  wrapText(ctx,foot,M,H-M+10,W-2*M,32);
+  return cv;
+}
+function pdfFromCanvas(cv){
+  const dataUrl=cv.toDataURL("image/jpeg",0.92);
+  const bin=atob(dataUrl.split(",")[1]);
+  const jpeg=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)jpeg[i]=bin.charCodeAt(i);
+  const W=595.28,H=841.89;
+  const enc=new TextEncoder();
+  const chunks=[];let pos=0;
+  const push=u8=>{chunks.push(u8);pos+=u8.length;};
+  const pushStr=s=>push(enc.encode(s));
+  const objOff=[0];
+  pushStr("%PDF-1.4\n");
+  const obj=(n,body)=>{objOff[n]=pos;pushStr(`${n} 0 obj\n${body}\nendobj\n`);};
+  obj(1,"<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2,"<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+  obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+  objOff[4]=pos;
+  pushStr(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${cv.width} /Height ${cv.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);
+  push(jpeg);pushStr("\nendstream\nendobj\n");
+  const content=`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+  obj(5,`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+  const xref=pos;
+  pushStr("xref\n0 6\n0000000000 65535 f \n"+[1,2,3,4,5].map(n=>String(objOff[n]).padStart(10,"0")+" 00000 n \n").join(""));
+  pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  const out=new Uint8Array(pos);let o=0;
+  for(const c of chunks){out.set(c,o);o+=c.length;}
+  return out;
+}
+async function saveReportPdf(){
+  const msgEl=document.getElementById("savemsg");
+  const say=s=>{if(msgEl)msgEl.textContent=s;};
+  say(t(S.pdfSaving));
+  const cv=drawReport();
+  const bytes=pdfFromCanvas(cv);
+  const tpName={pre:"preop","3":"post3m","6":"post6m","9":"post9m","12":"post12m","24":"post24m",other:"other"}[resInfo.timepoint]||"report";
+  const d=new Date();
+  const fname=`ScoreQ_ACL_${tpName}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.pdf`;
+  try{
+    if(window.claude&&window.claude.use){
+      const dl=await window.claude.use("downloads");
+      if(dl){
+        await dl.save({filename:fname,data:bytes});
+        say(t(S.pdfSaved));return;
+      }
+    }
+  }catch(e){
+    if(e&&e.code==="declined"){say(t(S.pdfDeclined));return;}
+    if(e&&e.code==="rate_limited"){say(t(S.pdfDeclined));return;}
+  }
+  try{
+    const blob=new Blob([bytes],{type:"application/pdf"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=fname;
+    document.body.appendChild(a);a.click();a.remove();
+    say(t(S.pdfSaved));
+  }catch(e){say(t(S.pdfFail));}
+}
+
+/* ---------- events ---------- */
+function bindEvents(){
+  const $=id=>document.getElementById(id);
+  const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+  on("b_save",()=>{
+    patient.disease=$("f_dis").value;
+    patient.injuryDate=$("f_inj").value;
+    patient.proc=$("f_proc")?$("f_proc").value:"";
+    patient.surgDate=$("f_surg")?$("f_surg").value:"";
+    if(patient.proc==="cons")patient.surgDate="";
+    saveLS("sq_patient",patient);render();
+  });
+  on("b_clear",()=>{patient={disease:"",injuryDate:"",proc:"",surgDate:""};saveLS("sq_patient",patient);render();});
+  const dis=$("f_dis");if(dis)dis.onchange=()=>{patient.disease=dis.value;patient.proc="";patient.surgDate="";patient.injuryDate=$("f_inj").value;render();};
+  const proc=$("f_proc");if(proc)proc.onchange=()=>{patient.proc=proc.value;patient.injuryDate=$("f_inj").value;render();};
+  document.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{view={tab:"home",qid:b.dataset.start,direct:false};delete results[b.dataset.start];render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-startd]").forEach(b=>b.onclick=()=>{view={tab:"list",qid:b.dataset.startd,direct:true};delete results[b.dataset.startd];render();window.scrollTo(0,0)});
+  on("b_back",()=>{view={tab:view.tab,qid:null,direct:false,research:false};render();window.scrollTo(0,0)});
+  on("b_research",()=>{view={tab:"home",qid:null,direct:false,research:true};resResults=null;render();window.scrollTo(0,0)});
+  if(view.research){
+    const rs=$("r_surg");if(rs)rs.onchange=()=>{resInfo.surgDate=rs.value;saveLS("sq_resinfo",resInfo);};
+    const rtp=$("r_tp");if(rtp)rtp.onchange=()=>{resInfo.timepoint=rtp.value;saveLS("sq_resinfo",resInfo);resResults=null;const sc=window.scrollY;render();window.scrollTo(0,sc);};
+    document.querySelectorAll("[data-side]").forEach(b=>b.onclick=()=>{
+      resInfo.side=b.dataset.side;saveLS("sq_resinfo",resInfo);resResults=null;
+      const sc=window.scrollY;render();window.scrollTo(0,sc);
+    });
+    document.querySelectorAll("[data-rq]").forEach(el=>{
+      const set=()=>{
+        const key=el.dataset.rq;
+        (answers[key]||(answers[key]=[]))[+el.dataset.q]=+el.dataset.v;
+        resResults=null;
+        const sc=window.scrollY;render();window.scrollTo(0,sc);
+      };
+      if(el.tagName==="BUTTON")el.onclick=set;else el.onchange=set;
+    });
+    on("b_rscore",()=>{
+      const rs2=$("r_surg");if(rs2)resInfo.surgDate=rs2.value;
+      saveLS("sq_resinfo",resInfo);
+      if(!resInfo.side||!resInfo.timepoint){$("warn").textContent=t(S.resMissingInfo);return;}
+      let missing=0,firstEl=null;
+      for(const qid of R_QIDS){
+        const q=QMAP[qid],a=answers["r_"+qid]||[];
+        q.items.forEach((_,i)=>{
+          const el=$("r_"+qid+"_item"+i);
+          const un=a[i]===undefined;
+          if(el)el.classList.toggle("unanswered",un);
+          if(un){missing++;if(!firstEl)firstEl=el;}
+        });
+      }
+      if(missing){$("warn").textContent=S.unanswered(missing);if(firstEl)firstEl.scrollIntoView({behavior:"smooth",block:"center"});return;}
+      resResults={};
+      for(const qid of R_QIDS){
+        const q=QMAP[qid];
+        const scores=q.compute(answers["r_"+qid]);
+        resResults[qid]={scores,interp:q.interp(scores)};
+      }
+      const sc=window.scrollY;render();window.scrollTo(0,sc);
+      const resEl=document.querySelector(".result");if(resEl)resEl.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    on("b_rpdf",()=>{saveReportPdf();});
+    on("b_rsave",()=>{
+      if(!resResults)return;
+      const tp=tpLabelBoth(resInfo.timepoint);
+      const kind=resInfo.timepoint==="pre"?"pre":"post";
+      for(const qid of R_QIDS){
+        records.push({ts:Date.now(),qid,
+          timing:tp[lang]||tp.ja,timingKind:kind,
+          scores:resResults[qid].scores.map(s=>({key:s.key,label:s.label,value:s.value,max:s.max}))});
+      }
+      saveLS("sq_records",records);
+      $("savemsg").textContent=t(S.savedRec);
+    });
+  }
+  if(view.qid){
+    const q=QMAP[view.qid];
+    const a=answers[view.qid];
+    document.querySelectorAll("[data-q]").forEach(el=>{
+      const set=()=>{a[+el.dataset.q]=+el.dataset.v;
+        delete results[view.qid];
+        const scroll=window.scrollY;render();window.scrollTo(0,scroll);};
+      if(el.tagName==="BUTTON")el.onclick=set; else el.onchange=set;
+    });
+    on("b_score",()=>{
+      const missing=q.items.map((_,i)=>a[i]===undefined?i:-1).filter(i=>i>=0);
+      const allowPartial=q.partial;
+      if(missing.length&&!allowPartial){
+        $("warn").textContent=S.unanswered(missing.length);
+        q.items.forEach((_,i)=>{const el=$("item"+i);if(el)el.classList.toggle("unanswered",a[i]===undefined)});
+        const first=$("item"+missing[0]);if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
+        return;
+      }
+      const scores=q.compute(a);
+      if(scores.every(s=>s.value===null)){$("warn").textContent=S.unanswered(missing.length);return;}
+      results[view.qid]={scores,interp:q.interp(scores)};
+      const scroll=window.scrollY;render();window.scrollTo(0,scroll);
+      const resEl=document.querySelector(".result");if(resEl)resEl.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    on("b_saverec",()=>{
+      const res=results[view.qid];if(!res)return;
+      const ti=view.direct?null:timingInfo();
+      records.push({ts:Date.now(),qid:view.qid,
+        timing:ti?ti.label:"",timingKind:ti?ti.kind:"",
+        scores:res.scores.map(s=>({key:s.key,label:s.label,value:s.value,max:s.max}))});
+      saveLS("sq_records",records);
+      $("savemsg").textContent=t(S.savedRec);
+    });
+  }
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    if(!b.dataset.armed){b.dataset.armed="1";b.textContent=t(S.confirmDel);return;}
+    records=records.filter(r=>r.ts!==+b.dataset.del);saveLS("sq_records",records);render();
+  });
+  on("b_delall",()=>{
+    const b=$("b_delall");
+    if(!b.dataset.armed){b.dataset.armed="1";b.textContent=t(S.confirmDelAll);return;}
+    records=[];saveLS("sq_records",records);render();
+  });
+  on("b_csv",()=>{
+    const head="date,questionnaire,timing,subscale,score,max";
+    const lines=records.map(r=>{
+      const d=new Date(r.ts).toISOString().slice(0,10);
+      const q=QMAP[r.qid];
+      return r.scores.filter(s=>s.value!==null).map(s=>`${d},${q?q.short:r.qid},${(r.timing||"").replace(/,/g," ")},${s.key},${s.value},${s.max}`).join("\n");
+    }).filter(Boolean);
+    const csv=[head,...lines].join("\n");
+    const showBox=()=>{
+      let ta=document.getElementById("csvbox");
+      if(!ta){ta=document.createElement("textarea");ta.id="csvbox";ta.readOnly=true;
+        ta.style.cssText="width:100%;height:140px;margin-top:10px;font-size:12px;font-family:monospace;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:8px";
+        document.querySelector(".card").appendChild(ta);}
+      ta.value=csv;ta.focus();ta.select();
+    };
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(csv):Promise.reject()).then(()=>{
+      const b=document.getElementById("b_csv");if(b)b.textContent=t(S.csvDone);
+    }).catch(showBox);
+  });
+}
+render();
+</script>
+
+</body>
+</html>
