@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ScoreQ 結果受信</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="icon.png">
+<meta name="theme-color" content="#0F766E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho+B1:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#F5F8F7; --surface:#FFFFFF; --surface2:#EEF4F2;
+  --ink:#1B2A2F; --ink2:#4E6168; --muted:#7C8D93; --line:#DFE8E6;
+  --accent:#0F766E; --accent-ink:#FFFFFF; --accent-soft:#E0EFEC; --accent-line:#B8D9D3;
+  --band-poor:#B3432F; --band-fair:#A86E12; --band-good:#5B8A3C; --band-exc:#177A66;
+  --chip-pre:#8A5A00; --chip-pre-bg:#F6ECD9; --chip-post:#0F5F76; --chip-post-bg:#DFEEF3;
+  --danger:#B3432F; --shadow:0 1px 3px rgba(27,42,47,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1716; --surface:#182120; --surface2:#1F2B29;
+    --ink:#E7EEEC; --ink2:#A9BBB7; --muted:#7E918D; --line:#273533;
+    --accent:#3AB5A3; --accent-ink:#08201C; --accent-soft:#1C3330; --accent-line:#2C4A45;
+    --band-poor:#D06A55; --band-fair:#CD9A3C; --band-good:#84B063; --band-exc:#3FA68F;
+    --chip-pre:#E0B45C; --chip-pre-bg:#33290F; --chip-post:#6FBBD3; --chip-post-bg:#12303A;
+    --danger:#D06A55; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",-apple-system,"Hiragino Sans",sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
+header.app{display:flex;align-items:baseline;justify-content:space-between;padding:20px 0 14px}
+.brand{font-family:"Shippori Mincho B1",serif;font-weight:700;font-size:26px;letter-spacing:.02em}
+.brand small{font-family:"Noto Sans JP",sans-serif;font-weight:400;font-size:12px;color:var(--muted);margin-left:10px;letter-spacing:.05em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-family:"Shippori Mincho B1",serif;font-size:18px;margin:0 0 4px;letter-spacing:.02em}
+.sub{color:var(--ink2);font-size:13px;margin:0 0 14px}
+.btn{appearance:none;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);padding:9px 18px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.btn.ghost{border:none;background:none;color:var(--accent);padding:6px 8px}
+.rowend{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:700}
+.chip.pre{background:var(--chip-pre-bg);color:var(--chip-pre)}
+.chip.post{background:var(--chip-post-bg);color:var(--chip-post)}
+.chip.neutral{background:var(--surface2);color:var(--ink2)}
+.ctx{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.scorerow{margin-bottom:18px}
+.scorehead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.scorename{font-weight:700}
+.scoreval{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.scoreval small{font-size:14px;color:var(--muted);font-weight:400}
+.verdict{font-size:13px;font-weight:700}
+.meter{position:relative;height:14px;margin:10px 0 4px}
+.meter .segs{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden}
+.meter .seg{height:14px}
+.meter .mark{position:absolute;top:-4px;width:4px;height:22px;border-radius:2px;background:var(--ink);outline:2px solid var(--surface)}
+.meterlab{display:flex;font-size:10.5px;color:var(--muted);margin-bottom:2px;gap:2px}
+.meterlab span{overflow:hidden;white-space:nowrap}
+.ans{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.ans span{display:inline-block;min-width:34px;text-align:center;font-size:11.5px;background:var(--surface2);border-radius:6px;padding:3px 4px;font-variant-numeric:tabular-nums}
+.ans span b{display:block;font-size:9.5px;color:var(--muted);font-weight:400}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.06em;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.formgrid{grid-template-columns:1fr}}
+.tblwrap{overflow-x:auto}
+table.recs{width:100%;border-collapse:collapse;font-size:13px}
+table.recs th{text-align:left;font-size:11px;color:var(--muted);letter-spacing:.06em;font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+table.recs td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:14px;padding:24px 0;text-align:center}
+.note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+.ok{color:var(--accent);font-size:13px;font-weight:700}
+.err{color:var(--danger);font-size:13px;font-weight:700}
+.disc{font-size:11.5px;color:var(--muted);margin-top:28px;padding-top:14px;border-top:1px solid var(--line);line-height:1.7}
+details summary{cursor:pointer;font-size:13px;color:var(--ink2);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app"><div class="brand">ScoreQ<small>結果受信 / Received results</small></div><a class="btn small" href="./">ScoreQ本体</a></header>
+  <main id="app"></main>
+  <div class="disc">患者さんのQRコードに含まれる結果をこの端末のブラウザ内で表示・保存しています。サーバーには送信されません。「受信履歴」もこの端末内のみに保存されます(症例IDメモは研究IDのみ入力し、氏名は入力しないでください)。</div>
+</div>
+<script>
+"use strict";
+const NAMES={ikdc:"IKDC",aclrsi:"ACL-RSI",lysholm:"Lysholm",tegner:"Tegner",koos:"KOOS",oks:"OKS",fjs:"FJS-12"};
+const SUBS={P:"疼痛",S:"症状",A:"日常生活",SP:"スポーツ/レク",Q:"QOL",total:"合計"};
+const BANDS={
+  ikdc:[[60,"poor","重度の機能障害"],[75,"fair","中等度"],[90,"good","良好"],[100,"exc","ほぼ正常"]],
+  aclrsi:[[56,"poor","低い"],[65,"fair","境界域"],[100,"exc","良好"]],
+  lysholm:[[65,"poor","不良"],[84,"fair","可"],[95,"good","良好"],[100,"exc","優秀"]],
+  koos:[[50,"poor","重度"],[70,"fair","中等度"],[85,"good","軽度"],[100,"exc","良好"]],
+  oks:[[20,"poor","重度"],[30,"fair","中〜重度"],[40,"good","軽〜中等度"],[48,"exc","良好"]],
+  fjs:[[40,"poor","低い"],[70,"fair","中等度"],[100,"exc","良好"]],
+};
+const B36="0123456789abcdefghijklmnopqrstuvwxyz";
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmtD(s){return s&&s.length===8?`${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}`:(s||"");}
+function timingLabel(t){
+  if(!t)return "";
+  const [k,v]=t.split(":");
+  if(k==="pre")return "術前";
+  if(k==="post")return `術後 ${v}か月`;
+  if(k==="inj")return `受傷後 ${v}か月`;
+  if(k==="tp")return v==="pre"?"術前":v==="other"?"その他":`術後${v}か月`;
+  return t;
+}
+function timingKind(t){if(!t)return "neutral";const k=t.split(":")[0];const v=t.split(":")[1];if(k==="pre"||(k==="tp"&&v==="pre"))return "pre";if(k==="post"||k==="tp")return "post";return "neutral";}
+function parseScores(s){
+  return s.split(",").filter(Boolean).map(x=>{const [k,vm]=x.split("=");const [v,m]=(vm||"").split("/");return {key:k,value:v===""?null:parseFloat(v),max:parseFloat(m)};});
+}
+function parse(hash){
+  const raw=decodeURIComponent((hash||"").replace(/^#/,"")).trim();
+  if(!raw)return null;
+  const parts=raw.split(";");
+  if(parts[0]!=="v1")throw new Error("未対応の形式です: "+parts[0]);
+  const P={v:1,date:"",timing:"",side:"",surg:"",qs:[],recs:[],raw};
+  parts.slice(1).forEach(p=>{
+    const i=p.indexOf("=");if(i<0)return;
+    const k=p.slice(0,i),v=p.slice(i+1);
+    if(k==="d")P.date=v;else if(k==="t")P.timing=v;else if(k==="s")P.side=v;else if(k==="o")P.surg=v;
+    else if(k==="q"){const [qid,sc,ans]=v.split(":");P.qs.push({qid,scores:parseScores(sc||""),answers:(ans||"").split("").map(c=>c==="-"?null:B36.indexOf(c))});}
+    else if(k==="r"){const [d,qid,kind,sc]=v.split(":");P.recs.push({date:d,qid,kind,scores:parseScores(sc||"")});}
+  });
+  return P;
+}
+function bandOf(qid,val){const b=BANDS[qid];if(!b||val===null)return null;for(const x of b){if(val<x[0]||x===b[b.length-1])return x;}return b[b.length-1];}
+function meterHtml(qid,val,max){
+  const b=BANDS[qid];
+  const pct=Math.min(100,Math.max(0,val/max*100));
+  if(!b)return `<div class="meter"><div class="segs"><div class="seg" style="flex:1;background:var(--accent-soft)"></div></div><div class="mark" style="left:calc(${pct}% - 2px)"></div></div><div class="meterlab"><span>0</span><span style="margin-left:auto">${max}</span></div>`;
+  let prev=0,segs="",labs="";
+  b.forEach(x=>{const w=(x[0]-prev)/max*100;segs+=`<div class="seg" style="flex:0 0 calc(${w}% - 2px);background:var(--band-${x[1]});opacity:.55"></div>`;labs+=`<span style="flex:0 0 calc(${w}% - 2px)">${esc(x[2])}</span>`;prev=x[0];});
+  return `<div class="meter"><div class="segs">${segs}</div><div class="mark" style="left:calc(${pct}% - 2px)"></div></div><div class="meterlab">${labs}</div>`;
+}
+function scoreRows(qid,scores,answers){
+  let h="";
+  scores.forEach(s=>{
+    const nm=NAMES[qid]||qid, sub=scores.length>1?(SUBS[s.key]||s.key):"";
+    if(s.value===null){h+=`<div class="scorerow"><div class="scorehead"><span class="scorename">${esc(nm)} ${esc(sub)}</span><span class="verdict" style="color:var(--muted)">未算出</span></div></div>`;return;}
+    const b=bandOf(qid,s.value);
+    h+=`<div class="scorerow"><div class="scorehead"><span class="scorename">${esc(nm)} ${esc(sub)}</span>${b?`<span class="verdict" style="color:var(--band-${b[1]})">${esc(b[2])}</span>`:""}</div>
+    <div class="scoreval">${s.value}<small> / ${s.max}</small></div>${meterHtml(qid,s.value,s.max)}</div>`;
+  });
+  if(answers&&answers.length){
+    h+=`<details><summary>回答内容 (${answers.filter(a=>a!==null).length} / ${answers.length} 項目)</summary><div class="ans">${answers.map((a,i)=>`<span><b>Q${i+1}</b>${a===null?"—":a}</span>`).join("")}</div></details>`;
+  }
+  return h;
+}
+function ctxHtml(P){
+  let h="";
+  if(P.date)h+=`<span class="chip neutral">回答日 ${esc(fmtD(P.date))}</span>`;
+  if(P.timing)h+=`<span class="chip ${timingKind(P.timing)}">${esc(timingLabel(P.timing))}</span>`;
+  if(P.side)h+=`<span class="chip neutral">術側: ${P.side==="R"?"右":"左"}</span>`;
+  if(P.surg)h+=`<span class="chip neutral">手術日 ${esc(fmtD(P.surg))}</span>`;
+  return h?`<div class="ctx">${h}</div>`:"";
+}
+function csvOf(P,memo){
+  const rows=[];
+  const base=[P.date?fmtD(P.date):"",memo||"",timingLabel(P.timing),P.side,P.surg?fmtD(P.surg):""];
+  P.qs.forEach(q=>{q.scores.forEach(s=>rows.push([...base,NAMES[q.qid]||q.qid,s.key,s.value===null?"":s.value,s.max,q.answers.map(a=>a===null?"":a).join(" ")]));});
+  P.recs.forEach(r=>{r.scores.forEach(s=>rows.push([fmtD(r.date),memo||"",r.kind==="pre"?"術前":r.kind==="post"?"術後":"",P.side,"",NAMES[r.qid]||r.qid,s.key,s.value===null?"":s.value,s.max,""]));});
+  return rows.map(r=>r.map(x=>String(x).replace(/,/g," ")).join(","));
+}
+const CSV_HEAD="date,memo,timing,side,surgery,questionnaire,subscale,score,max,answers";
+function loadLS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let history=loadLS("sq_received",[]);
+let current=null,parseErr="";
+try{current=parse(location.hash);}catch(e){parseErr=e.message;}
+
+function copyText(txt,btn,done){
+  (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{if(btn)btn.textContent=done;}).catch(()=>{prompt("コピーしてください",txt);});
+}
+function render(){
+  const app=document.getElementById("app");
+  let h="";
+  if(parseErr)h+=`<section class="card"><h2>読み取りエラー</h2><p class="err">${esc(parseErr)}</p></section>`;
+  if(current){
+    const already=history.some(x=>x.raw===current.raw);
+    h+=`<section class="card"><h2>受信した結果</h2>${ctxHtml(current)}`;
+    current.qs.forEach(q=>{h+=scoreRows(q.qid,q.scores,q.answers);});
+    if(current.recs.length){
+      h+=`<div class="tblwrap"><table class="recs"><thead><tr><th>日付</th><th>質問票</th><th>時期</th><th>スコア</th></tr></thead><tbody>`;
+      current.recs.forEach(r=>{h+=`<tr><td>${esc(fmtD(r.date))}</td><td>${esc(NAMES[r.qid]||r.qid)}</td><td>${r.kind==="pre"?"術前":r.kind==="post"?"術後":"—"}</td><td><b>${r.scores.filter(s=>s.value!==null).map(s=>r.scores.length>1?`${SUBS[s.key]||s.key} ${s.value}`:`${s.value} / ${s.max}`).join(" · ")}</b></td></tr>`;});
+      h+=`</tbody></table></div>`;
+    }
+    h+=`<div class="formgrid" style="margin-top:16px"><div class="field"><label>メモ(研究ID など・氏名は入力しない)</label><input id="memo" placeholder="例: ACL003 / 術後6か月"></div></div>
+    <div class="rowend"><button class="btn" id="b_copy">CSVコピー</button><button class="btn primary" id="b_keep" ${already?"disabled":""}>${already?"受信履歴に保存済み":"受信履歴に保存"}</button></div>
+    <div id="msg" class="ok" style="text-align:right;margin-top:6px"></div></section>`;
+  }
+  if(!current&&!parseErr){
+    h+=`<section class="card"><h2>QRコードを読み取ってください</h2><p class="sub">患者さんのScoreQ画面の「結果をQRで表示」をカメラで読み取ると、このページに結果が表示されます。</p>
+    <div class="field"><label>または、コードの文字列を貼り付け</label><textarea id="paste" rows="3" placeholder="v1;d=…"></textarea></div>
+    <div class="rowend"><button class="btn primary" id="b_paste">表示</button></div></section>`;
+  }
+  // history
+  h+=`<section class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">受信履歴 <small style="font-size:12px;color:var(--muted);font-weight:400">この端末内のみ</small></h2>
+  <span><button class="btn small" id="b_hcsv">全件CSVコピー</button> <button class="btn small danger" id="b_hclear">全削除</button></span></div>`;
+  if(!history.length)h+=`<div class="empty">まだ受信履歴はありません。</div>`;
+  else{
+    h+=`<div class="tblwrap" style="margin-top:10px"><table class="recs"><thead><tr><th>受信</th><th>メモ</th><th>時期</th><th>内容</th><th></th></tr></thead><tbody>`;
+    [...history].sort((a,b)=>b.ts-a.ts).forEach(x=>{
+      let P;try{P=parse("#"+x.raw);}catch(e){return;}
+      const cont=[...P.qs.map(q=>`${NAMES[q.qid]||q.qid} ${q.scores.filter(s=>s.value!==null).map(s=>q.scores.length>1?`${SUBS[s.key]||s.key}${s.value}`:s.value).join("/")}`),...(P.recs.length?[`記録${P.recs.length}件`]:[])].join(" · ");
+      const d=new Date(x.ts);
+      h+=`<tr><td>${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}</td><td>${esc(x.memo||"—")}</td><td>${esc(timingLabel(P.timing)||"—")}</td><td><a class="btn ghost small" href="#${encodeURIComponent(x.raw)}">${esc(cont)}</a></td><td><button class="btn ghost small danger" data-del="${x.ts}">削除</button></td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</section>`;
+  app.innerHTML=h;
+  const $=id=>document.getElementById(id);
+  const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn;};
+  on("b_copy",()=>copyText([CSV_HEAD,...csvOf(current,$("memo").value)].join("\n"),$("b_copy"),"コピーしました"));
+  on("b_keep",()=>{history.push({ts:Date.now(),memo:$("memo").value,raw:current.raw});saveLS("sq_received",history);render();$("msg")&&($("msg").textContent="保存しました");});
+  on("b_paste",()=>{const v=$("paste").value.trim();if(!v)return;const m=v.match(/#(.*)$/);location.hash="#"+encodeURIComponent(decodeURIComponent(m?m[1]:v));});
+  on("b_hcsv",()=>{const lines=[CSV_HEAD];history.forEach(x=>{try{lines.push(...csvOf(parse("#"+x.raw),x.memo));}catch(e){}});copyText(lines.join("\n"),$("b_hcsv"),"コピーしました");});
+  on("b_hclear",()=>{const b=$("b_hclear");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="もう一度押すと全削除";return;}history=[];saveLS("sq_received",history);render();});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(!b.dataset.armed){b.dataset.armed="1";b.textContent="もう一度押すと削除";return;}history=history.filter(x=>x.ts!==+b.dataset.del);saveLS("sq_received",history);render();});
+}
+window.addEventListener("hashchange",()=>{parseErr="";try{current=parse(location.hash);}catch(e){parseErr=e.message;current=null;}render();window.scrollTo(0,0);});
+render();
+</script>
+</body>
+</html>

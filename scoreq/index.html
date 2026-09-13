@@ -138,6 +138,17 @@ table.recs td.score{font-weight:700}
 .subq{font-size:12px;color:var(--muted);font-weight:400}
 a{color:var(--accent)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ---- QR output ---- */
+.qrov{position:fixed;inset:0;background:rgba(10,20,20,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.qrcard{background:#fff;color:#1B2A2F;border-radius:16px;padding:22px 20px 18px;max-width:420px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.qrcard h3{font-family:"Shippori Mincho B1",serif;margin:0 0 10px;font-size:18px;color:#0F766E}
+.qrcard img{display:block;width:min(78vw,340px);height:auto;margin:0 auto;image-rendering:pixelated;border:1px solid #DFE8E6;border-radius:8px}
+.qrcard .qrnote{font-size:13px;color:#4E6168;margin:12px 0 0;line-height:1.6}
+.qrcard .qrsum{font-size:13px;font-weight:700;color:#1B2A2F;margin:10px 0 0}
+.qrcard .rowend{justify-content:center;margin-top:14px}
+.qrcard .btn{background:#fff;color:#1B2A2F;border-color:#DFE8E6}
+.qrcard .btn.primary{background:#0F766E;border-color:#0F766E;color:#fff}
 </style>
 </head>
 <body>
@@ -150,6 +161,7 @@ a{color:var(--accent)}
   <main id="app"></main>
   <div class="disc" id="disc"></div>
 </div>
+<script src="qrcode.min.js"></script>
 <script>
 "use strict";
 /* ---------- i18n helpers ---------- */
@@ -185,6 +197,11 @@ const S={
   confirmDel:L("もう一度押すと削除","Tap again to delete"),
   confirmDelAll:L("もう一度押すと全削除","Tap again to delete all"),
   csv:L("CSVコピー","Copy CSV"),csvDone:L("コピーしました","Copied"),
+  qrShow:L("結果をQRで表示","Show result as QR"),qrRecs:L("記録をQRで表示","Records as QR"),
+  qrTitle:L("結果のQRコード","Result QR code"),
+  qrNote:L("受付・診察室でこのQRコードを見せてください。担当者がカメラで読み取ると結果が転送されます。データはサーバーを経由しません。","Show this QR code at the clinic. Staff scan it with a camera to receive your result; nothing goes through a server."),
+  qrCopy:L("リンクをコピー","Copy link"),qrCopied:L("コピーしました","Copied"),qrClose:L("閉じる","Close"),
+  qrTooLong:L("データが大きすぎてQRにできません(記録を減らしてください)","Too much data for one QR code (reduce records)"),
   noRecs:L("保存された記録はまだありません。","No records saved yet."),
   preOp:L("術前","Pre-op"),
   postOp:m=>lang==="ja"?`術後 ${m}`:`${m} post-op`,
@@ -617,6 +634,65 @@ function timingInfo(){
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
+
+/* ---------- QR output (results -> clinic) ---------- */
+const QR_RECEIVER="https://takeaki-ortho.github.io/neckguard-privacy/scoreq/r.html#";
+const B36="0123456789abcdefghijklmnopqrstuvwxyz";
+function ymd(d){return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;}
+function encAns(a,n){let s="";for(let i=0;i<n;i++){const v=a?a[i]:undefined;s+=(v===undefined||v===null||isNaN(v))?"-":(B36[Math.round(v)]||"-");}return s;}
+function encScores(scores){return scores.map(s=>`${s.key}=${s.value===null?"":s.value}/${s.max}`).join(",");}
+function timingCode(){
+  const now=new Date();
+  const hasSurg=patient.proc!=="cons"&&patient.surgDate;
+  if(hasSurg){const sd=new Date(patient.surgDate);if(sd>now)return "pre";return "post:"+Math.max(1,monthsBetween(sd,now));}
+  if(patient.proc&&patient.proc!=="cons"&&!patient.surgDate)return "pre";
+  if(patient.injuryDate)return "inj:"+Math.max(1,monthsBetween(new Date(patient.injuryDate),now));
+  return "";
+}
+function qrPayloadResult(qid,res,answersArr,extra){
+  const p=["v1","d="+ymd(new Date())];
+  if(extra&&extra.t)p.push("t="+extra.t);
+  if(extra&&extra.side)p.push("s="+extra.side);
+  if(extra&&extra.surg)p.push("o="+extra.surg.replace(/-/g,""));
+  p.push(`q=${qid}:${encScores(res.scores)}:${encAns(answersArr,QMAP[qid].items.length)}`);
+  return p.join(";");
+}
+function qrPayloadResearch(){
+  const p=["v1","d="+ymd(new Date())];
+  if(resInfo.timepoint)p.push("t=tp:"+resInfo.timepoint);
+  if(resInfo.side)p.push("s="+resInfo.side);
+  if(resInfo.surgDate)p.push("o="+resInfo.surgDate.replace(/-/g,""));
+  R_QIDS.forEach(qid=>{p.push(`q=${qid}:${encScores(resResults[qid].scores)}:${encAns(answers["r_"+qid],QMAP[qid].items.length)}`);});
+  return p.join(";");
+}
+function qrPayloadRecords(){
+  const p=["v1","d="+ymd(new Date())];
+  [...records].sort((a,b)=>b.ts-a.ts).slice(0,12).forEach(r=>{
+    p.push(`r=${ymd(new Date(r.ts))}:${r.qid}:${r.timingKind||""}:${encScores(r.scores)}`);
+  });
+  return p.join(";");
+}
+function showQr(payload,summary){
+  const url=QR_RECEIVER+payload;
+  let img="";
+  try{
+    const qr=qrcode(0,"M");qr.addData(url);qr.make();
+    img=qr.createDataURL(6,4);
+  }catch(e){alert(t(S.qrTooLong));return;}
+  const ov=document.createElement("div");ov.className="qrov";ov.id="qrov";
+  ov.innerHTML=`<div class="qrcard"><h3>${esc(t(S.qrTitle))}</h3><img src="${img}" alt="QR">
+  ${summary?`<p class="qrsum">${esc(summary)}</p>`:""}
+  <p class="qrnote">${esc(t(S.qrNote))}</p>
+  <div class="rowend"><button class="btn" id="b_qrcopy">${esc(t(S.qrCopy))}</button><button class="btn primary" id="b_qrclose">${esc(t(S.qrClose))}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  document.getElementById("b_qrclose").onclick=()=>ov.remove();
+  document.getElementById("b_qrcopy").onclick=()=>{
+    const b=document.getElementById("b_qrcopy");
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{b.textContent=t(S.qrCopied);}).catch(()=>{prompt("URL",url);});
+  };
+}
+
 /* ---------- rendering ---------- */
 function render(){
   document.getElementById("langbtn").textContent=lang==="ja"?"EN":"日本語";
@@ -743,7 +819,7 @@ function resultHtml(q,res){
   ${q.bandsNote?`<p class="note">${esc(t(S.noBands))}</p>`:""}
   <div class="interp"><p>${esc(t(res.interp))}</p></div>
   <div class="refbox">${t(q.refs)}</div>
-  <div class="rowend"><button class="btn primary" id="b_saverec">${esc(t(S.saveRec))}</button></div>
+  <div class="rowend"><button class="btn" id="b_qr">${esc(t(S.qrShow))}</button><button class="btn primary" id="b_saverec">${esc(t(S.saveRec))}</button></div>
   <div id="savemsg" class="sub" style="text-align:right;color:var(--accent);margin-top:6px"></div>
   </div>`;
 }
@@ -775,7 +851,7 @@ function recScreen(){
     <td><button class="btn ghost small danger" data-del="${rec.ts}">${esc(t(S.del))}</button></td></tr>`;
   }).join("");
   return `<section class="card"><div class="rechead"><h2 style="margin:0">${esc(t(S.recsTitle))}</h2>
-  <span><button class="btn small" id="b_csv">${esc(t(S.csv))}</button> <button class="btn small danger" id="b_delall">${esc(t(S.delAll))}</button></span></div>
+  <span><button class="btn small" id="b_recqr">${esc(t(S.qrRecs))}</button> <button class="btn small" id="b_csv">${esc(t(S.csv))}</button> <button class="btn small danger" id="b_delall">${esc(t(S.delAll))}</button></span></div>
   <p class="sub">${esc(t(S.recsSub))}</p>
   <div class="tblwrap"><table class="recs"><thead><tr><th>${esc(t(S.thDate))}</th><th>${esc(t(S.thQ))}</th><th>${esc(t(S.thTiming))}</th><th>${esc(t(S.thScore))}</th><th>${esc(t(S.thDelta))}</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   </section>`;
@@ -863,7 +939,7 @@ function researchResultHtml(){
     ${resInfo.surgDate?`<span class="chip neutral">${esc(t(S.surgDate))}: ${esc(resInfo.surgDate)}</span>`:""}
   </div>
   ${rows}
-  <div class="rowend"><button class="btn" id="b_rsave">${esc(t(S.saveRec))}</button><button class="btn primary" id="b_rpdf">${esc(t(S.pdfSave))}</button></div>
+  <div class="rowend"><button class="btn" id="b_rqr">${esc(t(S.qrShow))}</button><button class="btn" id="b_rsave">${esc(t(S.saveRec))}</button><button class="btn primary" id="b_rpdf">${esc(t(S.pdfSave))}</button></div>
   <div id="savemsg" class="sub" style="text-align:right;color:var(--accent);margin-top:6px"></div>
   </div>`;
 }
@@ -1021,6 +1097,20 @@ async function saveReportPdf(){
 function bindEvents(){
   const $=id=>document.getElementById(id);
   const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+
+  /* QR output */
+  on("b_qr",()=>{
+    const res=results[view.qid];if(!res)return;
+    const q=QMAP[view.qid];
+    const sum=res.scores.filter(s=>s.value!==null).map(s=>`${q.short} ${res.scores.length>1?s.key+" ":""}${s.value}`).join(" · ");
+    showQr(qrPayloadResult(view.qid,res,answers[view.qid],{t:view.direct?"":timingCode()}),sum);
+  });
+  on("b_rqr",()=>{
+    if(!resResults)return;
+    const sum=R_QIDS.map(qid=>`${QMAP[qid].short} ${resResults[qid].scores[0].value}`).join(" · ");
+    showQr(qrPayloadResearch(),sum);
+  });
+  on("b_recqr",()=>{if(!records.length)return;showQr(qrPayloadRecords(),(lang==="ja"?"直近の記録 ":"Latest records ")+Math.min(12,records.length));});
   on("b_save",()=>{
     patient.disease=$("f_dis").value;
     patient.injuryDate=$("f_inj").value;
