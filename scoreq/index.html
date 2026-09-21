@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta charset="utf-8">
-<title>ScoreQ</title>
+<title>KneeQ</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Shippori+Mincho+B1:wght@600;700&display=swap">
@@ -154,7 +154,7 @@ a{color:var(--accent)}
 <body>
 <div class="wrap">
   <header class="app">
-    <div class="brand">ScoreQ<small id="tagline"></small></div>
+    <div class="brand">KneeQ<small id="tagline"></small></div>
     <button class="langbtn" id="langbtn" onclick="toggleLang()">EN</button>
   </header>
   <nav class="tabs" id="tabs"></nav>
@@ -968,7 +968,7 @@ function drawReport(){
   ctx.font="bold 44px "+F;
   ctx.fillText(t(S.reportTitle),M,y);y+=34;
   ctx.font="24px "+F;ctx.fillStyle="#7C8D93";
-  ctx.fillText("ScoreQ",M,y);y+=54;
+  ctx.fillText("KneeQ",M,y);y+=54;
   const today=new Date();
   const ds=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,"0")}/${String(today.getDate()).padStart(2,"0")}`;
   ctx.font="28px "+F;ctx.fillStyle="#1B2A2F";
@@ -1030,8 +1030,8 @@ function drawReport(){
   });
   ctx.font="22px "+F;ctx.fillStyle="#7C8D93";
   const foot=lang==="ja"
-    ?"本結果は参考情報です。診断・治療方針の決定は担当医にご相談ください。 — ScoreQ"
-    :"These results are for reference only; consult the treating physician for diagnosis and treatment. — ScoreQ";
+    ?"本結果は参考情報です。診断・治療方針の決定は担当医にご相談ください。 — KneeQ"
+    :"These results are for reference only; consult the treating physician for diagnosis and treatment. — KneeQ";
   wrapText(ctx,foot,M,H-M+10,W-2*M,32);
   return cv;
 }
@@ -1071,7 +1071,7 @@ async function saveReportPdf(){
   const bytes=pdfFromCanvas(cv);
   const tpName={pre:"preop","3":"post3m","6":"post6m","9":"post9m","12":"post12m","24":"post24m",other:"other"}[resInfo.timepoint]||"report";
   const d=new Date();
-  const fname=`ScoreQ_ACL_${tpName}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.pdf`;
+  const fname=`KneeQ_ACL_${tpName}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.pdf`;
   try{
     if(window.claude&&window.claude.use){
       const dl=await window.claude.use("downloads");

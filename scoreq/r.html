@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<title>ScoreQ 結果受信</title>
+<title>KneeQ 結果受信</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="icon.png">
 <meta name="theme-color" content="#0F766E">
@@ -80,7 +80,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--ink2);font-weight:700}
 </head>
 <body>
 <div class="wrap">
-  <header class="app"><div class="brand">ScoreQ<small>結果受信 / Received results</small></div><a class="btn small" href="./">ScoreQ本体</a></header>
+  <header class="app"><div class="brand">KneeQ<small>結果受信 / Received results</small></div><a class="btn small" href="./">KneeQ本体</a></header>
   <main id="app"></main>
   <div class="disc">患者さんのQRコードに含まれる結果をこの端末のブラウザ内で表示・保存しています。サーバーには送信されません。「受信履歴」もこの端末内のみに保存されます(症例IDメモは研究IDのみ入力し、氏名は入力しないでください)。</div>
 </div>
@@ -193,7 +193,7 @@ function render(){
     <div id="msg" class="ok" style="text-align:right;margin-top:6px"></div></section>`;
   }
   if(!current&&!parseErr){
-    h+=`<section class="card"><h2>QRコードを読み取ってください</h2><p class="sub">患者さんのScoreQ画面の「結果をQRで表示」をカメラで読み取ると、このページに結果が表示されます。</p>
+    h+=`<section class="card"><h2>QRコードを読み取ってください</h2><p class="sub">患者さんのKneeQ画面の「結果をQRで表示」をカメラで読み取ると、このページに結果が表示されます。</p>
     <div class="field"><label>または、コードの文字列を貼り付け</label><textarea id="paste" rows="3" placeholder="v1;d=…"></textarea></div>
     <div class="rowend"><button class="btn primary" id="b_paste">表示</button></div></section>`;
   }
