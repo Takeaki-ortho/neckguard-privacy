@@ -93,13 +93,25 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:9px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){ .gauge i{transition:none} }
-.gsel{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gsel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .gsel button{border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-weight:700;font-size:13px;padding:8px 2px;border-radius:9px;cursor:pointer}
 .gsel button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .gimg{width:100%;height:auto;border-radius:10px;display:block;margin:8px 0}
 .glist{margin:0;padding-left:22px;font-size:14px}.glist li{margin:4px 0}
 .norm{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px}.norm b{font-variant-numeric:tabular-nums}.norm span{color:var(--muted)}
 .gtitle{font-size:20px;font-weight:700;margin:0}
+.ladder{display:flex;flex-direction:column;gap:8px}
+.stage{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
+.stage.now{border-color:var(--accent);background:var(--soft)}
+.stage.done{opacity:.75}
+.stage h3{margin:0 0 4px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.stage h3 .pill{margin:0}
+.crit{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px}
+.crit .k{color:var(--muted)}.crit .v{font-variant-numeric:tabular-nums;text-align:right}
+.crit .ok{color:var(--good);font-weight:700}.crit .ng{color:var(--bad);font-weight:700}.crit .na{color:var(--muted)}
+.stage .ref{font-size:12px;color:var(--muted);margin:4px 0 0}
+.next{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:14px}
+.next b{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -172,6 +184,12 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
     </div>
     <div id="holdChart" style="margin-top:12px"></div>
     <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>1日の最長保持（秒）・直近30日</span></div>
+  </div>
+
+  <div class="card">
+    <h2>いまの段階と次の目標</h2>
+    <div id="stageNow"></div>
+    <p class="note">直近7日のIMU最良値と最新の外来評価から判定します。目安の全体は「やり方」タブの「目安」にあります。</p>
   </div>
 
   <div class="card">
@@ -486,6 +504,7 @@ function render(){
   const lr=(a,b)=>(a==null?'-':a)+'/'+(b==null?'-':b);
   tb.innerHTML=cl.slice().reverse().map(c=>'<tr><td>'+c.d.slice(2).replace(/-/g,'/')+(c.ex?'<span class="pill">例</span>':'')+'</td><td>'+lr(c.holdL,c.holdR)+'</td><td>'+lr(c.repsL,c.repsR)+'</td><td>'+lr(c.velL,c.velR)+'</td><td>'+lr(c.lagL,c.lagR)+'</td><td>'+f1(c.sts)+'</td><td>'+f1(c.tug)+'</td><td>'+f1(c.walk)+'</td><td>'+(c.mmtL||'-')+'/'+(c.mmtR||'-')+'</td><td><button class="del" data-d="'+c.d+'">削除</button></td></tr>').join('')||'<tr><td colspan="10" class="note">まだ記録がありません</td></tr>';
   tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{DB.clinic=DB.clinic.filter(c=>c.d!==b.dataset.d);save();render();}));
+  if(typeof renderStageNow==='function') renderStageNow();
   // data
   $('dHolds').textContent=DB.holds.length; $('dDays').textContent=Object.keys(db).length; $('dClinic').textContent=DB.clinic.length;
 }
@@ -540,11 +559,47 @@ const GUIDES=[
  norms:[['1.0 m/秒以上','屋外・地域歩行の目安（10秒以下）'],['0.8 m/秒未満','屋外歩行が難しくなる目安（12.5秒以上）'],['0.6 m/秒未満','屋内歩行レベル（16.7秒以上）'],['0.1 m/秒の改善','意味のある変化の目安']],
  cautions:['ゴール手前で減速しないよう、14mまで歩き切ることを伝える。','廊下の長さが足りないときは助走と減速を1mずつにし、条件をメモする。']}
 ];
-let gsel='hhd';
+let gsel='ladder';
+/* ===== 段階ラダー ===== */
+const LADDER=[
+ {n:1,name:'つかまって立てる・移乗が安定',ref:'手すりや机につかまれば膝が崩れずに立っていられる。',c:[['hold',5,'>=','保持','秒'],['lag',30,'<=','最伸展まで','°'],['vel',60,'>=','速さ（仮）','°/秒'],['tug',30,'<=','TUG','秒']]},
+ {n:2,name:'屋内を膝崩れなく歩ける',ref:'筋力体重比 0.30 前後に相当。杖や装具ありで屋内を安心して歩ける。',c:[['hold',15,'>=','保持','秒'],['reps',8,'>=','30秒回数','回'],['lag',20,'<=','最伸展まで','°'],['vel',100,'>=','速さ（仮）','°/秒'],['walk',0.4,'>=','歩行速度','m/秒'],['tug',20,'<=','TUG','秒']]},
+ {n:3,name:'手を使わずスムーズに立てる',ref:'筋力体重比 0.35〜0.40 に相当。腕を組んだまま椅子から立てる。',c:[['hold',30,'>=','保持','秒'],['reps',12,'>=','30秒回数','回'],['lag',15,'<=','最伸展まで','°'],['vel',150,'>=','速さ（仮）','°/秒'],['sts',20,'<=','5回立ち上がり','秒'],['tug',15,'<=','TUG','秒']]},
+ {n:4,name:'屋外を歩ける・横断歩道を渡れる',ref:'筋力体重比 0.45 前後。地域歩行の速さ 0.8 m/秒以上。',c:[['hold',60,'>=','保持','秒'],['reps',15,'>=','30秒回数','回'],['lag',10,'<=','最伸展まで','°'],['vel',200,'>=','速さ（仮）','°/秒'],['sts',15,'<=','5回立ち上がり','秒'],['tug',13.5,'<=','TUG','秒'],['walk',0.8,'>=','歩行速度','m/秒']]},
+ {n:5,name:'階段を手すりで昇り降りできる',ref:'筋力体重比 0.5〜0.6。歩行速度 1.0 m/秒以上。',c:[['reps',20,'>=','30秒回数','回'],['lag',5,'<=','最伸展まで','°'],['vel',250,'>=','速さ（仮）','°/秒'],['sts',12,'<=','5回立ち上がり','秒'],['tug',10,'<=','TUG','秒'],['walk',1.0,'>=','歩行速度','m/秒']]}
+];
+/* 直近7日のIMU最良（左右の弱い方）＋最新外来 */
+function currentMetrics(){
+  const m={hold:null,reps:null,lag:null,vel:null,sts:null,tug:null,walk:null};
+  const cut=new Date(); cut.setDate(cut.getDate()-7); const cutS=cut.getFullYear()+'-'+String(cut.getMonth()+1).padStart(2,'0')+'-'+String(cut.getDate()).padStart(2,'0');
+  const best={L:{hold:null,reps:null,lag:null,vel:null},R:{hold:null,reps:null,lag:null,vel:null}};
+  DB.holds.filter(h=>h.d>=cutS).forEach(h=>{const b=best[h.side]; if(h.mode==='r'){b.reps=Math.max(b.reps??-1,h.n);} else if(h.mode==='v'){b.vel=Math.max(b.vel??-1,h.v);} else {b.hold=Math.max(b.hold??-1,h.sec);} if(h.flex!=null) b.lag=Math.min(b.lag??999,h.flex);});
+  const weak=(k,lowerBetter)=>{const a=best.L[k],b=best.R[k]; if(a==null&&b==null) return null; if(a==null) return b; if(b==null) return a; return lowerBetter?Math.max(a,b):Math.min(a,b);};
+  m.hold=weak('hold'); m.reps=weak('reps'); m.vel=weak('vel'); m.lag=weak('lag',true);
+  const cl=DB.clinic.filter(c=>!c.ex); const c=cl[cl.length-1]; if(c){m.sts=c.sts; m.tug=c.tug; m.walk=c.walk?+(10/c.walk).toFixed(2):null;}
+  return m;
+}
+function stageEval(m){
+  return LADDER.map(st=>{ const rows=st.c.map(([k,th,op,label,unit])=>{const v=m[k]; const ok=v==null?null:(op==='>='?v>=th:v<=th); return {k,th,op,label,unit,v,ok};}); const measured=rows.filter(r=>r.ok!=null); const pass=measured.length>0&&measured.every(r=>r.ok); return {st,rows,pass,measured:measured.length}; });
+}
+function fmtV(v,unit){ return v==null?'—':(unit==='m/秒'?v.toFixed(2):(Number.isInteger(v)?v:(+v).toFixed(1)))+' '+unit; }
+function ladderHTML(full){
+  const m=currentMetrics(); const ev=stageEval(m); let now=0; for(const e of ev){ if(e.pass) now=e.st.n; else break; }
+  return '<div class="ladder">'+ev.map(e=>{const cls=e.st.n<=now?'done':(e.st.n===now+1?'now':''); return '<div class="stage '+cls+'"><h3><span>段階'+e.st.n+'　'+e.st.name+'</span>'+(e.st.n<=now?'<span class="pill" style="background:var(--good);color:#fff">達成</span>':(e.st.n===now+1?'<span class="pill" style="background:var(--accent);color:var(--accent-ink)">次の目標</span>':''))+'</h3>'+(full?'<p class="ref">'+e.st.ref+'</p>':'')+'<div class="crit">'+e.rows.map(r=>'<span class="k">'+r.label+' '+(r.op==='>='?'≥':'≤')+' '+r.th+' '+r.unit+'</span><span class="v '+(r.ok==null?'na':r.ok?'ok':'ng')+'">'+fmtV(r.v,r.unit)+'</span>').join('')+'</div></div>';}).join('')+'</div>';
+}
+function renderStageNow(){
+  const m=currentMetrics(); const ev=stageEval(m); let now=0; for(const e of ev){ if(e.pass) now=e.st.n; else break; }
+  const nx=ev.find(e=>e.st.n===now+1);
+  let html='<div class="next">'+(now===0?'まだ段階1の条件が揃っていません。':'<b>段階'+now+'</b>「'+ev[now-1].st.name+'」まで達成。');
+  if(nx){ const miss=nx.rows.filter(r=>r.ok===false), un=nx.rows.filter(r=>r.ok==null); html+='<br>次は<b>段階'+nx.st.n+'</b>「'+nx.st.name+'」。'+(miss.length?'足りないもの：'+miss.map(r=>r.label+' '+fmtV(r.v,r.unit)+' → '+(r.op==='>='?'≥':'≤')+r.th+r.unit).join('、')+'。':'')+(un.length?' 未計測：'+un.map(r=>r.label).join('・')+'。':''); }
+  else html+='<br>すべての段階を達成しています。';
+  $('stageNow').innerHTML=html+'</div>';
+}
 function esc(x){return x.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
 function renderGuide(){
-  $('gsel').innerHTML=GUIDES.map(g=>'<button aria-pressed="'+(g.id===gsel)+'" data-g="'+g.id+'">'+g.name+'</button>').join('');
+  $('gsel').innerHTML='<button aria-pressed="'+(gsel==='ladder')+'" data-g="ladder">目安</button>'+GUIDES.map(g=>'<button aria-pressed="'+(g.id===gsel)+'" data-g="'+g.id+'">'+g.name+'</button>').join('');
   $('gsel').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{gsel=b.dataset.g;renderGuide();}));
+  if(gsel==='ladder'){ $('guideBody').innerHTML='<section class="tab"><div class="card"><p class="gtitle">どこまで行けば、何ができるか</p><p class="note">段階ごとに「できること」と目安の数字。歩行速度・TUG・5回立ち上がり・筋力体重比は文献の目安、IMUの数字はこの患者用の仮の目安で、外来の結果を見ながら調整します。緑＝達成、赤＝未達、灰＝未計測。</p></div>'+ladderHTML(true)+'<div class="card"><h2>数字の根拠（参考）</h2><ul class="glist"><li>膝伸展筋力の体重比（kgf/kg）：0.3未満で歩行が難しくなり、0.4前後で手を使わずに立ち上がれ、0.5〜0.6で階段昇降が安定する（本邦の理学療法の目安）。IMUの数字はこれに対応するように仮置きしている。</li><li>歩行速度：0.4 m/秒未満は屋内のみ、0.4〜0.8は制限つき屋外、0.8以上で地域歩行、1.0以上で横断歩道を青のうちに渡れる（Perryの分類）。</li><li>TUG：10秒未満は健常、13.5秒以上で転倒リスク、20秒以上で外出に介助、30秒以上で移動に全面介助。</li><li>5回立ち上がり：15秒以上で転倒リスク上昇。腕を使わずに5回できること自体が「手を使わず立てる」の証明になる。</li><li>伸展ラグ（最伸展まで）：10°を超えると立脚期の膝の安定が落ち、過伸展での代償に頼りやすい。</li></ul></div></section>'; return; }
   const g=GUIDES.find(x=>x.id===gsel);
   const list=(t,a,num)=>'<div class="card"><h2>'+t+'</h2><'+(num?'ol':'ul')+' class="glist">'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</'+(num?'ol':'ul')+'></div>';
   $('guideBody').innerHTML='<section class="tab">'+
