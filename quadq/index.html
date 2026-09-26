@@ -50,6 +50,7 @@ section.tab{display:flex;flex-direction:column;gap:16px}
 .row.between{justify-content:space-between}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:0;background:var(--panel);color:var(--muted);font:inherit;font-weight:700;padding:8px 16px;cursor:pointer}
+#modeSeg{display:flex;width:100%}#modeSeg button{flex:1;padding:8px 4px;font-size:14px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .seg button[data-side="R"][aria-pressed="true"]{background:var(--right)}
 .btn{border:0;border-radius:12px;font:inherit;font-weight:700;padding:14px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-size:17px}
@@ -126,8 +127,14 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
         <button data-side="R" aria-pressed="false">右</button>
       </div>
     </div>
-    <div class="timer big"><span id="tSec">0.0</span><small>秒</small></div>
-    <div class="angle"><span>ひざの曲がり <b id="aFlex">--</b>°</span><span>目標 <b id="aTarget">15</b>°以内</span></div>
+    <div class="seg" id="modeSeg" style="margin:8px 0 2px">
+      <button data-mode="s" aria-pressed="true">保持（秒）</button>
+      <button data-mode="r" aria-pressed="false">30秒回数</button>
+      <button data-mode="v" aria-pressed="false">速さ</button>
+    </div>
+    <div class="timer big"><span id="tSec">0.0</span><small id="tUnit">秒</small></div>
+    <p class="note" id="modeNote" style="text-align:center;margin:0">目標角以内で伸ばし続けられた秒数。日々の主指標。</p>
+    <div class="angle"><span>ひざの曲がり <b id="aFlex">--</b>°</span><span>目標 <b id="aTarget">15</b>°以内</span><span>速さ <b id="aVel">--</b>°/秒</span></div>
     <div class="gauge"><i id="gFill"></i><s id="gMark"></s></div>
     <p class="note" id="phaseNote">椅子に座り、iPhoneをすね（すねの前面）にバンドで固定します。画面は外向き、上端がひざ側です。</p>
     <ol class="steps" id="stepList">
@@ -180,10 +187,8 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
     <h2>外来評価を記録する</h2>
     <button class="btn small ghost" id="btnGoGuide">各検査のやり方（イラスト付き）を見る</button>
     <label class="f">日付<input type="date" id="cDate"></label>
-    <div class="grid2">
-      <label class="f">HHD 左（kgf）<input type="number" step="0.1" inputmode="decimal" id="cHhdL" placeholder="例 8.5"></label>
-      <label class="f">HHD 右（kgf）<input type="number" step="0.1" inputmode="decimal" id="cHhdR" placeholder="例 7.9"></label>
-    </div>
+    <div class="status" id="imuSnap" style="margin-top:10px"></div>
+    <p class="note">上の値は、その日に「在宅」タブのセンサーで計った左右の最良値です（保存時に一緒に記録されます）。外来でも同じiPhoneで計ってください。</p>
     <div class="inline">
       <label class="f">5回立ち上がり（秒）<input type="number" step="0.1" inputmode="decimal" id="cSts"></label>
       <button class="btn small ghost" data-sw="cSts">計時</button>
@@ -206,15 +211,18 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
   </div>
 
   <div class="card">
-    <h2>膝伸展筋力（HHD）の推移</h2>
+    <h2>膝を伸ばす速さ（IMU・°/秒）の推移</h2>
     <div id="hhdChart"></div>
-    <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>kgf</span></div>
+    <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>最高角速度 °/秒（筋パワーの目安）</span></div>
+    <h2 style="margin-top:14px">30秒回数の推移</h2>
+    <div id="repsChart"></div>
+    <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>回/30秒</span></div>
   </div>
 
   <div class="card">
     <h2>外来評価の一覧</h2>
-    <div class="tbl"><table id="clinicTable"><thead><tr><th>日付</th><th>HHD左</th><th>HHD右</th><th>5xSTS</th><th>TUG</th><th>10m</th><th>MMT</th><th></th></tr></thead><tbody></tbody></table></div>
-    <p class="note">HHD：ハンドヘルドダイナモメーター。座位・膝90°・下腿遠位で押し当て、3回の最大値を記録。</p>
+    <div class="tbl"><table id="clinicTable"><thead><tr><th>日付</th><th>保持 左/右</th><th>回数</th><th>速さ</th><th>最伸展まで</th><th>5xSTS</th><th>TUG</th><th>10m</th><th>MMT</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p class="note">保持＝秒、回数＝回/30秒、速さ＝°/秒、最伸展まで＝完全伸展に足りない角度（小さいほど良い）。</p>
   </div>
 </section>
 
@@ -291,8 +299,12 @@ document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',
 let side='L';
 $('sideSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;$('sideSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));}));
 
+let mode='s';
+const MODE_NOTE={s:'目標角以内で伸ばし続けられた秒数。日々の主指標。',r:'30秒間に、目標角まで伸ばして下ろすを何回できるか。持久力の指標。',v:'できるだけ速く蹴り上げたときの最高角速度。筋パワーの指標。10秒間に3回。'};
+$('modeSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{if(running)return;mode=b.dataset.mode;$('modeSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('modeNote').textContent=MODE_NOTE[mode];$('tUnit').textContent=mode==='r'?'回':mode==='v'?'°/秒':'秒';$('tSec').textContent=mode==='s'?'0.0':'0';}));
+
 /* ===== sensor ===== */
-let target=15, tilt=null, tilt0=null, sensorOn=false, filt=null, gotData=false;
+let target=15, tilt=null, tilt0=null, sensorOn=false, filt=null, gotData=false, omega=0;
 $('targetRange').addEventListener('input',e=>{target=+e.target.value;$('aTarget').textContent=target;placeMark();});
 function placeMark(){$('gMark').style.left=(100*(1-target/90))+'%';}
 placeMark();
@@ -300,6 +312,7 @@ function status(msg,cls){const s=$('sensorStatus');s.hidden=false;s.className='s
 function onMotion(e){
   const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
   gotData=true;
+  const rr=e.rotationRate; if(rr&&rr.alpha!=null){ omega=Math.hypot(rr.alpha,rr.beta,rr.gamma); }
   const g=Math.hypot(a.x,a.y,a.z); if(g<1) return;
   const t=Math.acos(Math.min(1,Math.abs(a.y)/g))*180/Math.PI; // すねの鉛直からの傾き
   filt=(filt==null)?t:filt+0.25*(t-filt);
@@ -310,6 +323,7 @@ function flexion(){ if(tilt==null) return null; const base=(tilt0==null)?0:tilt0
 function updateAngle(){
   const f=flexion(); if(f==null) return;
   $('aFlex').textContent=Math.round(f);
+  $('aVel').textContent=Math.round(omega);
   $('gFill').style.width=(100*(1-Math.min(f,90)/90))+'%';
   $('gFill').style.background=(f<=target)?'var(--good)':'var(--accent)';
 }
@@ -330,51 +344,63 @@ $('btnSensor').addEventListener('click',async()=>{
 $('btnZero').addEventListener('click',()=>{ if(tilt==null) return; tilt0=tilt; updateAngle(); status('ゼロ合わせ完了。「開始」を押してひざを伸ばしてください。','ok'); });
 
 /* ===== hold timer ===== */
-let running=false, manual=false, t0=0, raf=0, outSince=null, best=null, tick=0;
+let running=false, manual=false, t0=0, raf=0, outSince=null, best=null, tick=0, reps=0, wasDown=true, peakV=0;
 let wake=null;
 async function lockScreen(){try{if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen');}catch(e){}}
 function releaseScreen(){try{wake&&wake.release();}catch(e){} wake=null;}
 let actx=null;
 function beep(freq,ms){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=freq;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+ms/1000);}catch(e){}}
 function startTimer(isManual){
-  manual=isManual; running=true; t0=performance.now(); outSince=null; best=null; tick=0;
+  manual=isManual; running=true; t0=performance.now(); outSince=null; best=null; tick=0; reps=0; wasDown=true; peakV=0;
   $('btnStart').textContent='停止'; $('btnStart').classList.add('stop'); $('btnStart').disabled=false;
-  $('phaseNote').textContent=manual?'手動計測中。ひざが落ちたら「停止」を押してください。':'計測中。ひざをできるだけ伸ばしたまま止めてください。';
+  $('phaseNote').textContent=manual?'手動計測中。ひざが落ちたら「停止」を押してください。':(mode==='r'?'30秒計測中。目標角まで伸ばして、下ろす、を繰り返してください。':mode==='v'?'10秒計測中。できるだけ速く3回蹴り上げてください。':'計測中。ひざをできるだけ伸ばしたまま止めてください。');
   lockScreen(); beep(880,80); loop();
 }
 function loop(){
   if(!running) return;
   const el=(performance.now()-t0)/1000;
-  $('tSec').textContent=el.toFixed(1);
-  if(Math.floor(el/10)>tick){tick=Math.floor(el/10);beep(660,60);}
-  if(!manual){
-    const f=flexion();
-    if(f!=null){
-      if(best==null||f<best) best=f;
+  const f=manual?null:flexion();
+  if(f!=null&&(best==null||f<best)) best=f;
+  if(mode==='r'&&!manual){
+    $('tSec').textContent=reps;
+    if(f!=null){ if(wasDown&&f<=target){reps++;wasDown=false;beep(880,40);} else if(!wasDown&&f>=45){wasDown=true;} }
+    $('phaseNote').textContent='30秒計測中。残り '+Math.max(0,30-el).toFixed(0)+' 秒';
+    if(el>=30){stopTimer(30);return;}
+  } else if(mode==='v'&&!manual){
+    if(omega>peakV) peakV=omega;
+    $('tSec').textContent=Math.round(peakV);
+    $('phaseNote').textContent='10秒計測中。残り '+Math.max(0,10-el).toFixed(0)+' 秒。できるだけ速く蹴り上げる。';
+    if(el>=10){stopTimer(10);return;}
+  } else {
+    $('tSec').textContent=el.toFixed(1);
+    if(Math.floor(el/10)>tick){tick=Math.floor(el/10);beep(660,60);}
+    if(!manual&&f!=null){
       if(f>target){ if(outSince==null) outSince=performance.now(); else if(performance.now()-outSince>1500){ stopTimer(el-1.5); return; } }
       else outSince=null;
     }
+    if(el>=180){stopTimer(el);return;}
   }
-  if(el>=180){stopTimer(el);return;}
   raf=requestAnimationFrame(loop);
 }
 function stopTimer(sec){
   running=false; cancelAnimationFrame(raf); releaseScreen(); beep(440,150);
   sec=Math.max(0,Math.round(sec*10)/10);
-  $('tSec').textContent=sec.toFixed(1);
   $('btnStart').textContent='開始'; $('btnStart').classList.remove('stop');
-  DB.holds.push({d:todayStr(),t:new Date().toISOString(),side,sec,flex:best==null?null:Math.round(best),mode:manual?'m':'s',target});
+  const m=manual?'m':mode;
+  const rec={d:todayStr(),t:new Date().toISOString(),side,sec,flex:best==null?null:Math.round(best),mode:m,target};
+  if(m==='r'){rec.n=reps;$('tSec').textContent=reps;} else if(m==='v'){rec.v=Math.round(peakV);$('tSec').textContent=rec.v;} else {$('tSec').textContent=sec.toFixed(1);}
+  DB.holds.push(rec);
   if(DB.sample){DB.holds=DB.holds.filter(h=>!h.ex);DB.clinic=DB.clinic.filter(c=>!c.ex);DB.sample=false;}
   save();
-  $('phaseNote').textContent=(sec>=DB.goalSec)?'目標達成。次はこの数字が「前の自分」になります。':'記録しました。少し休んでもう一度。';
+  $('phaseNote').textContent=m==='r'?('30秒で '+reps+' 回。記録しました。'):m==='v'?('最高 '+rec.v+' °/秒。記録しました。'):(sec>=DB.goalSec)?'目標達成。次はこの数字が「前の自分」になります。':'記録しました。少し休んでもう一度。';
   render();
 }
 $('btnStart').addEventListener('click',()=>{ if(running) stopTimer((performance.now()-t0)/1000); else { if(tilt0==null&&sensorOn){status('先に「ゼロ合わせ」をしてください。','err');return;} startTimer(false);} });
-$('btnManual').addEventListener('click',()=>{ if(running){stopTimer((performance.now()-t0)/1000);return;} $('btnStart').disabled=false; startTimer(true); });
+$('btnManual').addEventListener('click',()=>{ if(running){stopTimer((performance.now()-t0)/1000);return;} mode='s'; $('modeSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.mode==='s')); $('btnStart').disabled=false; startTimer(true); });
 $('goalSec').addEventListener('change',e=>{DB.goalSec=Math.max(1,+e.target.value||20);save();render();});
 
 /* ===== clinic ===== */
-$('cDate').value=todayStr();
+$('cDate').value=todayStr(); $('cDate').addEventListener('change',render);
 const sw={running:false,t0:0,target:null,raf:0};
 document.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{
   const id=b.dataset.sw;
@@ -386,11 +412,13 @@ document.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=
 }));
 $('btnSaveClinic').addEventListener('click',()=>{
   const n=v=>v===''?null:+v;
-  const rec={d:$('cDate').value||todayStr(),hhdL:n($('cHhdL').value),hhdR:n($('cHhdR').value),sts:n($('cSts').value),tug:n($('cTug').value),walk:n($('cWalk').value),mmtL:$('cMmtL').value,mmtR:$('cMmtR').value,note:$('cNote').value.trim()};
-  if(rec.hhdL==null&&rec.hhdR==null&&rec.sts==null&&rec.tug==null&&rec.walk==null&&!rec.mmtL&&!rec.mmtR&&!rec.note){toast('何か1つ入力してください');return;}
+  const d=$('cDate').value||todayStr(); const imu=imuDay(d);
+  const rec=Object.assign({d,sts:n($('cSts').value),tug:n($('cTug').value),walk:n($('cWalk').value),mmtL:$('cMmtL').value,mmtR:$('cMmtR').value,note:$('cNote').value.trim()},imu);
+  const anyImu=Object.values(imu).some(v=>v!=null);
+  if(!anyImu&&rec.sts==null&&rec.tug==null&&rec.walk==null&&!rec.mmtL&&!rec.mmtR&&!rec.note){toast('IMU計測か、何か1つの入力が必要です');return;}
   if(DB.sample){DB.holds=DB.holds.filter(h=>!h.ex);DB.clinic=DB.clinic.filter(c=>!c.ex);DB.sample=false;}
   DB.clinic=DB.clinic.filter(c=>c.d!==rec.d); DB.clinic.push(rec); DB.clinic.sort((a,b)=>a.d<b.d?-1:1); save();
-  ['cHhdL','cHhdR','cSts','cTug','cWalk','cNote'].forEach(i=>$(i).value=''); $('cMmtL').value='';$('cMmtR').value='';
+  ['cSts','cTug','cWalk','cNote'].forEach(i=>$(i).value=''); $('cMmtL').value='';$('cMmtR').value='';
   toast('保存しました'); render();
 });
 
@@ -417,12 +445,20 @@ function seedSample(){
     const base=6+(29-i)*0.35;
     for(let k=0;k<3;k++){ DB.holds.push({d:ds,t:d.toISOString()+k,side:'L',sec:+(base+Math.sin(i+k)*1.5).toFixed(1),flex:12,mode:'s',target:15,ex:1}); DB.holds.push({d:ds,t:d.toISOString()+'r'+k,side:'R',sec:+(base-1.5+Math.cos(i+k)*1.5).toFixed(1),flex:14,mode:'s',target:15,ex:1}); }
   }
-  const m=[-90,-60,-30,0]; m.forEach((off,i)=>{ const d=new Date(now); d.setDate(now.getDate()+off); DB.clinic.push({d:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),hhdL:+(6.2+i*0.9).toFixed(1),hhdR:+(5.6+i*0.8).toFixed(1),sts:+(28-i*2.5).toFixed(1),tug:+(19-i*1.2).toFixed(1),walk:+(16-i*1).toFixed(1),mmtL:i<2?'3-':'3',mmtR:'3-',note:i===0?'例：初回評価':'',ex:1}); });
+  const m=[-90,-60,-30,0]; m.forEach((off,i)=>{ const d=new Date(now); d.setDate(now.getDate()+off); DB.clinic.push({d:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),holdL:6+i*4,holdR:5+i*3.5,repsL:6+i*2,repsR:5+i*2,velL:90+i*25,velR:80+i*22,lagL:22-i*3,lagR:25-i*3,sts:+(28-i*2.5).toFixed(1),tug:+(19-i*1.2).toFixed(1),walk:+(16-i*1).toFixed(1),mmtL:i<2?'3-':'3',mmtR:'3-',note:i===0?'例：初回評価':'',ex:1}); });
 }
 if(DB.holds.length===0&&DB.clinic.length===0&&!DB.sample){ seedSample(); save(); }
 
 /* ===== render ===== */
-function dayBest(){ const m={}; DB.holds.forEach(h=>{ const k=h.d; m[k]=m[k]||{L:null,R:null}; if(m[k][h.side]==null||h.sec>m[k][h.side]) m[k][h.side]=h.sec; }); return m; }
+function dayBest(){ const m={}; DB.holds.forEach(h=>{ if(h.mode==='r'||h.mode==='v') return; const k=h.d; m[k]=m[k]||{L:null,R:null}; if(m[k][h.side]==null||h.sec>m[k][h.side]) m[k][h.side]=h.sec; }); return m; }
+/* その日のIMU値のまとめ {holdL,holdR,repsL,repsR,velL,velR,lagL,lagR} */
+function imuDay(d){ const o={holdL:null,holdR:null,repsL:null,repsR:null,velL:null,velR:null,lagL:null,lagR:null};
+  DB.holds.filter(h=>h.d===d).forEach(h=>{ const S=h.side;
+    if(h.mode==='r'){ if(o['reps'+S]==null||h.n>o['reps'+S]) o['reps'+S]=h.n; }
+    else if(h.mode==='v'){ if(o['vel'+S]==null||h.v>o['vel'+S]) o['vel'+S]=h.v; }
+    else { if(o['hold'+S]==null||h.sec>o['hold'+S]) o['hold'+S]=h.sec; }
+    if(h.flex!=null&&(o['lag'+S]==null||h.flex<o['lag'+S])) o['lag'+S]=h.flex; });
+  return o; }
 function render(){
   const ex=DB.sample; const pillEx=ex?' <span class="pill">例</span>':'';
   const t=todayStr(); const db=dayBest(); const td=db[t]||{L:null,R:null};
@@ -434,7 +470,7 @@ function render(){
   const bestAll=Math.max(0,...DB.holds.map(h=>h.sec)); $('goalNote').textContent=bestAll?('これまでの最長 '+bestAll.toFixed(1)+' 秒'):'';
   // today log
   const tl=DB.holds.filter(h=>h.d===t).slice().reverse(); $('todayCount').textContent=tl.length+'回';
-  $('todayLog').innerHTML=tl.map(h=>'<li><span>'+(h.side==='L'?'左':'右')+' <b class="big">'+h.sec.toFixed(1)+'</b> 秒'+(h.flex!=null?' <span class="note" style="display:inline">最伸展 '+h.flex+'°</span>':'')+(h.mode==='m'?' <span class="pill">手動</span>':'')+'</span><button class="del" data-t="'+h.t+'">削除</button></li>').join('')||'<li><span class="note">まだ記録がありません</span></li>';
+  $('todayLog').innerHTML=tl.map(h=>'<li><span>'+(h.side==='L'?'左':'右')+' '+(h.mode==='r'?'<b class="big">'+h.n+'</b> 回/30秒':h.mode==='v'?'<b class="big">'+h.v+'</b> °/秒':'<b class="big">'+h.sec.toFixed(1)+'</b> 秒')+(h.flex!=null?' <span class="note" style="display:inline">最伸展まで '+h.flex+'°</span>':'')+(h.mode==='m'?' <span class="pill">手動</span>':'')+'</span><button class="del" data-t="'+h.t+'">削除</button></li>').join('')||'<li><span class="note">まだ記録がありません</span></li>';
   $('todayLog').querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{DB.holds=DB.holds.filter(h=>h.t!==b.dataset.t);save();render();}));
   // hold chart 30 days
   const days=[]; const dd=new Date(); for(let i=29;i>=0;i--){const x=new Date(dd);x.setDate(dd.getDate()-i);days.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'));}
@@ -442,9 +478,13 @@ function render(){
   $('holdChart').innerHTML=lineChart(days,[{c:'var(--left)',v:L},{c:'var(--right)',v:R}],{goal:DB.goalSec,ex,fmt:x=>x.toFixed(0)+'s'});
   // clinic
   const cl=DB.clinic.slice();
-  $('hhdChart').innerHTML=lineChart(cl.map(c=>c.d),[{c:'var(--left)',v:cl.map(c=>c.hhdL)},{c:'var(--right)',v:cl.map(c=>c.hhdR)}],{ex,fmt:x=>x.toFixed(1),dates:true});
+  $('hhdChart').innerHTML=lineChart(cl.map(c=>c.d),[{c:'var(--left)',v:cl.map(c=>c.velL==null?null:c.velL)},{c:'var(--right)',v:cl.map(c=>c.velR==null?null:c.velR)}],{ex,fmt:x=>x.toFixed(0),dates:true});
+  $('repsChart').innerHTML=lineChart(cl.map(c=>c.d),[{c:'var(--left)',v:cl.map(c=>c.repsL==null?null:c.repsL)},{c:'var(--right)',v:cl.map(c=>c.repsR==null?null:c.repsR)}],{ex,fmt:x=>x.toFixed(0),dates:true});
+  const snap=imuDay($('cDate').value||t); const fx=(a,b,u)=>(a==null?'--':a)+' / '+(b==null?'--':b)+(u||'');
+  $('imuSnap').innerHTML='<b>この日のIMU計測（左 / 右）</b><br>保持 '+fx(snap.holdL,snap.holdR,' 秒')+'　回数 '+fx(snap.repsL,snap.repsR,' 回')+'<br>速さ '+fx(snap.velL,snap.velR,' °/秒')+'　最伸展まで '+fx(snap.lagL,snap.lagR,'°');
   const tb=$('clinicTable').querySelector('tbody');
-  tb.innerHTML=cl.slice().reverse().map(c=>'<tr><td>'+c.d.slice(2).replace(/-/g,'/')+(c.ex?'<span class="pill">例</span>':'')+'</td><td>'+f1(c.hhdL)+'</td><td>'+f1(c.hhdR)+'</td><td>'+f1(c.sts)+'</td><td>'+f1(c.tug)+'</td><td>'+f1(c.walk)+'</td><td>'+(c.mmtL||'-')+'/'+(c.mmtR||'-')+'</td><td><button class="del" data-d="'+c.d+'">削除</button></td></tr>').join('')||'<tr><td colspan="8" class="note">まだ記録がありません</td></tr>';
+  const lr=(a,b)=>(a==null?'-':a)+'/'+(b==null?'-':b);
+  tb.innerHTML=cl.slice().reverse().map(c=>'<tr><td>'+c.d.slice(2).replace(/-/g,'/')+(c.ex?'<span class="pill">例</span>':'')+'</td><td>'+lr(c.holdL,c.holdR)+'</td><td>'+lr(c.repsL,c.repsR)+'</td><td>'+lr(c.velL,c.velR)+'</td><td>'+lr(c.lagL,c.lagR)+'</td><td>'+f1(c.sts)+'</td><td>'+f1(c.tug)+'</td><td>'+f1(c.walk)+'</td><td>'+(c.mmtL||'-')+'/'+(c.mmtR||'-')+'</td><td><button class="del" data-d="'+c.d+'">削除</button></td></tr>').join('')||'<tr><td colspan="10" class="note">まだ記録がありません</td></tr>';
   tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{DB.clinic=DB.clinic.filter(c=>c.d!==b.dataset.d);save();render();}));
   // data
   $('dHolds').textContent=DB.holds.length; $('dDays').textContent=Object.keys(db).length; $('dClinic').textContent=DB.clinic.length;
@@ -471,13 +511,13 @@ function lineChart(labels,series,o){
 
 /* ===== guide ===== */
 const GUIDES=[
-{id:'hhd',name:'HHD',full:'HHD 膝伸展筋力',sub:'ハンドヘルドダイナモメーター',img:'img/hhd.jpg',
- purpose:'大腿四頭筋の等尺性筋力を kgf で測る。MMT3-の帯域では最も変化に敏感で、外来の主指標にする。',
- setup:['診察台の端に深く腰かけ、股関節・膝関節ともに90°。下腿は台から垂らし、足は床につけない。','両手は台の縁を軽くつかんでよい（体幹を後ろに倒さないため）。','センサーパッドを下腿前面の遠位（外果の約5cm上）に当てる。検者は反対の手で大腿を台に軽く押さえる。'],
- steps:['「私の手を押し返して、膝を伸ばしてください」と説明し、1回軽く練習する。','「はじめ」で3秒かけて力を上げ、最大努力を約5秒保つ。検者は器械を動かさず固定する（make test）。','30秒以上休んで、合計3回。左右とも行う。'],
- record:['3回の最大値を kgf で記録（外来タブの「HHD 左／右」）。','体重で割った値（kgf/kg）も推移の比較に使える。','痛みや代償（体幹の後傾、腰を浮かす）があればメモに残す。'],
- norms:[['体重比 0.30 kgf/kg','歩行自立のおおよその目安'],['体重比 0.35〜0.40','手を使わずに立ち上がる目安'],['左右差 15%以上','弱い側に注意']],
- cautions:['検者の固定が負けると値が低く出る。固定が難しい場合はベルトで固定する方法もある。','膝に痛みが出るときは中止し、角度を変えて再評価する。']},
+{id:'imu',name:'IMU',full:'IMU 膝伸ばしテスト',sub:'iPhoneのセンサーで測る筋力の代わり（保持・30秒回数・速さ・最大伸展角）',img:'img/imu.jpg',
+ purpose:'筋力計の代わりに、すねに固定したiPhoneの傾きと角速度で四頭筋の働きを4つの数字にする。在宅と外来で同じ方法にすると、そのまま比べられる。',
+ setup:['椅子か診察台に深く腰かけ、太ももが水平になるようにする。足は床から浮かせる。','iPhoneをすねの前面、膝のすぐ下にバンドで固定。画面は外向き、上端が膝側。ゆるいと角度がぶれる。','「在宅」タブで「センサーを使う」→ 膝を曲げて足を下ろした姿勢で「ゼロ合わせ」。左右を切り替えて同じ手順。'],
+ steps:['保持：モード「保持（秒）」。「開始」で膝をできるだけ伸ばし、目標角（初期15°）以内に保つ。目標角を1.5秒超えて曲がると自動で終了。左右3回、最長を採る。','30秒回数：モード「30秒回数」。目標角まで伸ばして、45°以上まで下ろす、を30秒で繰り返す。伸びるたびに音が鳴る。左右1回ずつ。','速さ：モード「速さ」。10秒の間に、できるだけ速く3回蹴り上げる。ジャイロが最高角速度（°/秒）を取る。左右1回ずつ。','最大伸展角：各計測で自動記録。完全伸展に足りない角度（伸展ラグ）が小さいほど良い。'],
+ record:['4つの値はその日の最良値として「外来」タブに自動で取り込まれ、保存時に外来記録に入る。','外来では同じiPhone・同じバンド位置で測る。ゼロ合わせの姿勢を揃えることが最も大事。','手動ストップウォッチで測った保持は「手動」印がつく。'],
+ norms:[['保持 目標秒数','本人と決める（例：20秒→60秒）'],['30秒回数','2回以上の増加で変化とみなす'],['速さ（°/秒）','若年健常者は300以上。この患者では前回比で見る'],['最伸展まで（°）','15°以内が目標角の初期値。減れば伸展ラグの改善']],
+ cautions:['数字は同じ端末・同じ固定位置でのみ比較できる。バンドを買い替えたらメモに残す。','速さモードは膝に痛みが出ない範囲で。痛みが出たら保持と回数だけにする。','太ももが水平でないと角度がずれる。座面が低い椅子は避ける。']},
 {id:'sts',name:'5回立ち',full:'5回立ち上がり',sub:'5xSTS（Five Times Sit-to-Stand）',img:'img/sts.jpg',
  purpose:'下肢筋力とバランスを含めた「立ち上がる力」を秒で測る。生活で意味のある数字として本人に見せる。',
  setup:['肘掛けのない椅子（座面高 約43〜45cm）を壁につけて固定する。','深く腰かけ、背もたれにもたれた状態から開始。腕は胸の前で組む。','足は肩幅、床にしっかりつける。'],
