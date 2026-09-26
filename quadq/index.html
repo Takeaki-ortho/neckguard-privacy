@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="QuadQ">
+<title>QuadQ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#F5F8F7; --panel:#FFFFFF; --ink:#18272B; --muted:#5E7075; --line:#D7E1E0;
+  --accent:#1F6F78; --accent-ink:#FFFFFF; --soft:#E3F0F0; --good:#2F8F5B; --warn:#C7782A; --bad:#B8433A;
+  --left:#1F6F78; --right:#C7782A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ color-scheme:dark;
+    --bg:#0F1718; --panel:#182224; --ink:#E7EFEF; --muted:#9AB0B3; --line:#2A3A3D;
+    --accent:#4FB3BD; --accent-ink:#0F1718; --soft:#1E3234; --good:#5DC48B; --warn:#E4A15C; --bad:#E07A72;
+    --left:#4FB3BD; --right:#E4A15C; }
+}
+:root[data-theme="dark"]{ color-scheme:dark;
+  --bg:#0F1718; --panel:#182224; --ink:#E7EFEF; --muted:#9AB0B3; --line:#2A3A3D;
+  --accent:#4FB3BD; --accent-ink:#0F1718; --soft:#1E3234; --good:#5DC48B; --warn:#E4A15C; --bad:#E07A72;
+  --left:#4FB3BD; --right:#E4A15C; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.6}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 40px}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:14px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+header h1{font-size:22px;margin:0;letter-spacing:.02em}
+header h1 small{font-size:12px;color:var(--muted);font-weight:500;margin-left:8px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--soft);padding:4px;border-radius:12px;margin:6px 0 16px}
+.tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:10px 4px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.tab{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.eyebrow{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.big{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;font-weight:600}
+.timer{font-size:72px;line-height:1;text-align:center;margin:8px 0 2px}
+.timer small{font-size:22px;color:var(--muted);margin-left:4px}
+.angle{display:flex;justify-content:center;gap:24px;align-items:baseline;color:var(--muted);font-size:14px}
+.angle b{font-family:"IBM Plex Mono",monospace;font-size:22px;color:var(--ink);font-weight:600}
+.gauge{height:14px;background:var(--soft);border-radius:7px;overflow:hidden;margin:10px 0 4px;position:relative}
+.gauge i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);width:0%;transition:width .12s linear}
+.gauge s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--warn)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.between{justify-content:space-between}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--panel);color:var(--muted);font:inherit;font-weight:700;padding:8px 16px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button[data-side="R"][aria-pressed="true"]{background:var(--right)}
+.btn{border:0;border-radius:12px;font:inherit;font-weight:700;padding:14px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-size:17px}
+.btn.wide{width:100%}
+.btn.ghost{background:var(--soft);color:var(--accent)}
+.btn.stop{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.small{padding:8px 12px;font-size:14px;border-radius:9px}
+.steps{margin:0;padding-left:20px;color:var(--muted);font-size:14px}
+.steps li{margin:2px 0}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.status{font-size:14px;padding:8px 12px;border-radius:9px;background:var(--soft);color:var(--ink);margin-top:10px}
+.status.err{background:color-mix(in srgb,var(--bad) 14%,var(--panel));color:var(--bad)}
+.status.ok{background:color-mix(in srgb,var(--good) 14%,var(--panel));color:var(--good)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--soft);border-radius:10px;padding:10px 8px;text-align:center}
+.stat .v{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted)}
+label.f{display:block;font-size:13px;color:var(--muted);margin-top:10px}
+.f input,.f select,.f textarea{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inline{display:flex;gap:8px;align-items:flex-end}
+.inline .f{flex:1}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:5px;margin-right:4px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:500;font-size:12px}
+.tbl{overflow-x:auto}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--muted);font-weight:700;margin-left:6px;vertical-align:middle}
+.log li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.log{list-style:none;margin:0;padding:0}
+.log .del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px}
+textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
+.goal{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.goal input{width:70px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:9px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion: reduce){ .gauge i{transition:none} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <h1>QuadQ <small>ひざ伸ばし記録</small></h1>
+  <span class="eyebrow" id="today"></span>
+</header>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="home">在宅（毎日）</button>
+  <button role="tab" aria-selected="false" data-tab="clinic">外来（月1）</button>
+  <button role="tab" aria-selected="false" data-tab="data">データ</button>
+</div>
+
+<!-- ===== 在宅 ===== -->
+<section class="tab" id="tab-home">
+  <div class="card">
+    <div class="row between">
+      <h2 style="margin:0">膝伸ばし保持タイマー</h2>
+      <div class="seg" id="sideSeg">
+        <button data-side="L" aria-pressed="true">左</button>
+        <button data-side="R" aria-pressed="false">右</button>
+      </div>
+    </div>
+    <div class="timer big"><span id="tSec">0.0</span><small>秒</small></div>
+    <div class="angle"><span>ひざの曲がり <b id="aFlex">--</b>°</span><span>目標 <b id="aTarget">15</b>°以内</span></div>
+    <div class="gauge"><i id="gFill"></i><s id="gMark"></s></div>
+    <p class="note" id="phaseNote">椅子に座り、iPhoneをすね（すねの前面）にバンドで固定します。画面は外向き、上端がひざ側です。</p>
+    <ol class="steps" id="stepList">
+      <li>「センサーを使う」を押して許可する</li>
+      <li>ひざを曲げて足を下ろした姿勢で「ゼロ合わせ」</li>
+      <li>「開始」を押し、ひざをできるだけ伸ばして止める</li>
+      <li>目標角より曲がると自動で終了します</li>
+    </ol>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="btnSensor">センサーを使う</button>
+      <button class="btn ghost" id="btnZero" disabled>ゼロ合わせ</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn wide" id="btnStart" disabled>開始</button>
+    </div>
+    <div class="row between" style="margin-top:10px">
+      <label class="f" style="margin:0;flex:1">目標角（曲がり°以内）
+        <input type="range" id="targetRange" min="5" max="40" step="5" value="15"></label>
+      <button class="btn small ghost" id="btnManual">手動ストップウォッチ</button>
+    </div>
+    <div class="status" id="sensorStatus" hidden></div>
+  </div>
+
+  <div class="card">
+    <h2>今日と最近の記録</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="sBestL">--</div><div class="l">左 今日の最長（秒）</div></div>
+      <div class="stat"><div class="v" id="sBestR">--</div><div class="l">右 今日の最長（秒）</div></div>
+      <div class="stat"><div class="v" id="sStreak">0</div><div class="l">連続日数</div></div>
+    </div>
+    <div class="goal" style="margin-top:12px">
+      <span class="eyebrow">今の目標</span>
+      <span>保持 <input type="number" id="goalSec" class="big" min="1" max="600" value="20"> 秒</span>
+      <span class="note" id="goalNote"></span>
+    </div>
+    <div id="holdChart" style="margin-top:12px"></div>
+    <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>1日の最長保持（秒）・直近30日</span></div>
+  </div>
+
+  <div class="card">
+    <h2>今日のセット <span class="pill" id="todayCount">0回</span></h2>
+    <ul class="log" id="todayLog"></ul>
+    <p class="note">1日の目安：左右それぞれ5回ずつ、間に休憩をはさむ。</p>
+  </div>
+</section>
+
+<!-- ===== 外来 ===== -->
+<section class="tab" id="tab-clinic" hidden>
+  <div class="card">
+    <h2>外来評価を記録する</h2>
+    <label class="f">日付<input type="date" id="cDate"></label>
+    <div class="grid2">
+      <label class="f">HHD 左（kgf）<input type="number" step="0.1" inputmode="decimal" id="cHhdL" placeholder="例 8.5"></label>
+      <label class="f">HHD 右（kgf）<input type="number" step="0.1" inputmode="decimal" id="cHhdR" placeholder="例 7.9"></label>
+    </div>
+    <div class="inline">
+      <label class="f">5回立ち上がり（秒）<input type="number" step="0.1" inputmode="decimal" id="cSts"></label>
+      <button class="btn small ghost" data-sw="cSts">計時</button>
+    </div>
+    <div class="inline">
+      <label class="f">TUG（秒）<input type="number" step="0.1" inputmode="decimal" id="cTug"></label>
+      <button class="btn small ghost" data-sw="cTug">計時</button>
+    </div>
+    <div class="inline">
+      <label class="f">10m歩行（秒）<input type="number" step="0.1" inputmode="decimal" id="cWalk"></label>
+      <button class="btn small ghost" data-sw="cWalk">計時</button>
+    </div>
+    <div class="grid2">
+      <label class="f">MMT 左<select id="cMmtL"><option value="">--</option><option>2</option><option>2+</option><option>3-</option><option>3</option><option>3+</option><option>4-</option><option>4</option><option>4+</option><option>5</option></select></label>
+      <label class="f">MMT 右<select id="cMmtR"><option value="">--</option><option>2</option><option>2+</option><option>3-</option><option>3</option><option>3+</option><option>4-</option><option>4</option><option>4+</option><option>5</option></select></label>
+    </div>
+    <label class="f">メモ（装具・痛み・次回までの目標）<textarea id="cNote" rows="2"></textarea></label>
+    <div class="status" id="swStatus" hidden></div>
+    <button class="btn wide" id="btnSaveClinic" style="margin-top:12px">保存</button>
+  </div>
+
+  <div class="card">
+    <h2>膝伸展筋力（HHD）の推移</h2>
+    <div id="hhdChart"></div>
+    <div class="legend"><span><i style="background:var(--left)"></i>左</span><span><i style="background:var(--right)"></i>右</span><span>kgf</span></div>
+  </div>
+
+  <div class="card">
+    <h2>外来評価の一覧</h2>
+    <div class="tbl"><table id="clinicTable"><thead><tr><th>日付</th><th>HHD左</th><th>HHD右</th><th>5xSTS</th><th>TUG</th><th>10m</th><th>MMT</th><th></th></tr></thead><tbody></tbody></table></div>
+    <p class="note">HHD：ハンドヘルドダイナモメーター。座位・膝90°・下腿遠位で押し当て、3回の最大値を記録。</p>
+  </div>
+</section>
+
+<!-- ===== データ ===== -->
+<section class="tab" id="tab-data" hidden>
+  <div class="card">
+    <h2>書き出し（外来に持って行く）</h2>
+    <p class="note">この端末の記録を文字にします。コピーして外来の端末に貼り付けるか、LINE等で自分宛に送っておけます。</p>
+    <textarea class="io f" id="ioOut" readonly></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost" id="btnExport">文字にする</button>
+      <button class="btn ghost" id="btnCopy">コピー</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>読み込み（別端末の記録を合わせる）</h2>
+    <textarea class="io f" id="ioIn" placeholder="ここに貼り付け"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn ghost" id="btnImport">読み込む（重複は除く）</button></div>
+  </div>
+  <div class="card">
+    <h2>まとめ</h2>
+    <div class="stats">
+      <div class="stat"><div class="v" id="dHolds">0</div><div class="l">保持記録 件</div></div>
+      <div class="stat"><div class="v" id="dDays">0</div><div class="l">記録した日数</div></div>
+      <div class="stat"><div class="v" id="dClinic">0</div><div class="l">外来評価 回</div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn small ghost" id="btnSample">例のデータを入れる</button>
+      <button class="btn small ghost" id="btnClear">すべて消す</button>
+    </div>
+    <div class="status" id="dataStatus" hidden></div>
+  </div>
+  <div class="card">
+    <h2>使い方のポイント</h2>
+    <ol class="steps">
+      <li>センサー計測は「座位で太ももが水平」であることが前提です。深く腰かけてください。</li>
+      <li>iPhoneはすねの前面、膝のすぐ下に。ゆるいと角度がぶれます。</li>
+      <li>数字は「前の自分」との比較に使います。他人と比べる必要はありません。</li>
+      <li>痛みが出た日は無理をせず、外来のメモに残してください。</li>
+    </ol>
+  </div>
+</section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const KEY='quadq_v1';
+const $=id=>document.getElementById(id);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+let DB={holds:[],clinic:[],goalSec:20,sample:false};
+function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);DB=Object.assign(DB,o);}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+load();
+const toastEl=$('toast');let toastT;
+function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove('show'),1800);}
+$('today').textContent=todayStr().replace(/-/g,'/');
+
+/* tabs */
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['home','clinic','data'].forEach(t=>$('tab-'+t).hidden=(t!==b.dataset.tab));
+  render();
+}));
+
+/* side */
+let side='L';
+$('sideSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{side=b.dataset.side;$('sideSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));}));
+
+/* ===== sensor ===== */
+let target=15, tilt=null, tilt0=null, sensorOn=false, filt=null, gotData=false;
+$('targetRange').addEventListener('input',e=>{target=+e.target.value;$('aTarget').textContent=target;placeMark();});
+function placeMark(){$('gMark').style.left=(100*(1-target/90))+'%';}
+placeMark();
+function status(msg,cls){const s=$('sensorStatus');s.hidden=false;s.className='status '+(cls||'');s.textContent=msg;}
+function onMotion(e){
+  const a=e.accelerationIncludingGravity; if(!a||a.x==null) return;
+  gotData=true;
+  const g=Math.hypot(a.x,a.y,a.z); if(g<1) return;
+  const t=Math.acos(Math.min(1,Math.abs(a.y)/g))*180/Math.PI; // すねの鉛直からの傾き
+  filt=(filt==null)?t:filt+0.25*(t-filt);
+  tilt=filt;
+  updateAngle();
+}
+function flexion(){ if(tilt==null) return null; const base=(tilt0==null)?0:tilt0; return Math.max(0,Math.min(120,90-(tilt-base))); }
+function updateAngle(){
+  const f=flexion(); if(f==null) return;
+  $('aFlex').textContent=Math.round(f);
+  $('gFill').style.width=(100*(1-Math.min(f,90)/90))+'%';
+  $('gFill').style.background=(f<=target)?'var(--good)':'var(--accent)';
+}
+$('btnSensor').addEventListener('click',async()=>{
+  try{
+    if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+      const r=await DeviceMotionEvent.requestPermission(); if(r!=='granted') throw new Error('denied');
+    }
+    window.addEventListener('devicemotion',onMotion);
+    gotData=false;
+    setTimeout(()=>{
+      if(gotData){sensorOn=true;$('btnZero').disabled=false;$('btnStart').disabled=false;status('センサー動作中。ひざを曲げた姿勢で「ゼロ合わせ」を押してください。','ok');}
+      else status('この画面ではセンサーが読めません。Safariで直接開くか、ホーム画面に追加してから開いてください。手動ストップウォッチも使えます。','err');
+    },1500);
+    status('センサーを確認中…');
+  }catch(err){status('センサーの許可が得られませんでした。設定 > Safari > 「モーションと画面の向きのアクセス」をオンにしてやり直してください。手動ストップウォッチも使えます。','err');}
+});
+$('btnZero').addEventListener('click',()=>{ if(tilt==null) return; tilt0=tilt; updateAngle(); status('ゼロ合わせ完了。「開始」を押してひざを伸ばしてください。','ok'); });
+
+/* ===== hold timer ===== */
+let running=false, manual=false, t0=0, raf=0, outSince=null, best=null, tick=0;
+let wake=null;
+async function lockScreen(){try{if(navigator.wakeLock) wake=await navigator.wakeLock.request('screen');}catch(e){}}
+function releaseScreen(){try{wake&&wake.release();}catch(e){} wake=null;}
+let actx=null;
+function beep(freq,ms){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=freq;g.gain.value=.08;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+ms/1000);}catch(e){}}
+function startTimer(isManual){
+  manual=isManual; running=true; t0=performance.now(); outSince=null; best=null; tick=0;
+  $('btnStart').textContent='停止'; $('btnStart').classList.add('stop'); $('btnStart').disabled=false;
+  $('phaseNote').textContent=manual?'手動計測中。ひざが落ちたら「停止」を押してください。':'計測中。ひざをできるだけ伸ばしたまま止めてください。';
+  lockScreen(); beep(880,80); loop();
+}
+function loop(){
+  if(!running) return;
+  const el=(performance.now()-t0)/1000;
+  $('tSec').textContent=el.toFixed(1);
+  if(Math.floor(el/10)>tick){tick=Math.floor(el/10);beep(660,60);}
+  if(!manual){
+    const f=flexion();
+    if(f!=null){
+      if(best==null||f<best) best=f;
+      if(f>target){ if(outSince==null) outSince=performance.now(); else if(performance.now()-outSince>1500){ stopTimer(el-1.5); return; } }
+      else outSince=null;
+    }
+  }
+  if(el>=180){stopTimer(el);return;}
+  raf=requestAnimationFrame(loop);
+}
+function stopTimer(sec){
+  running=false; cancelAnimationFrame(raf); releaseScreen(); beep(440,150);
+  sec=Math.max(0,Math.round(sec*10)/10);
+  $('tSec').textContent=sec.toFixed(1);
+  $('btnStart').textContent='開始'; $('btnStart').classList.remove('stop');
+  DB.holds.push({d:todayStr(),t:new Date().toISOString(),side,sec,flex:best==null?null:Math.round(best),mode:manual?'m':'s',target});
+  if(DB.sample){DB.holds=DB.holds.filter(h=>!h.ex);DB.clinic=DB.clinic.filter(c=>!c.ex);DB.sample=false;}
+  save();
+  $('phaseNote').textContent=(sec>=DB.goalSec)?'目標達成。次はこの数字が「前の自分」になります。':'記録しました。少し休んでもう一度。';
+  render();
+}
+$('btnStart').addEventListener('click',()=>{ if(running) stopTimer((performance.now()-t0)/1000); else { if(tilt0==null&&sensorOn){status('先に「ゼロ合わせ」をしてください。','err');return;} startTimer(false);} });
+$('btnManual').addEventListener('click',()=>{ if(running){stopTimer((performance.now()-t0)/1000);return;} $('btnStart').disabled=false; startTimer(true); });
+$('goalSec').addEventListener('change',e=>{DB.goalSec=Math.max(1,+e.target.value||20);save();render();});
+
+/* ===== clinic ===== */
+$('cDate').value=todayStr();
+const sw={running:false,t0:0,target:null,raf:0};
+document.querySelectorAll('[data-sw]').forEach(b=>b.addEventListener('click',()=>{
+  const id=b.dataset.sw;
+  if(sw.running&&sw.target===id){ sw.running=false; cancelAnimationFrame(sw.raf); $(id).value=((performance.now()-sw.t0)/1000).toFixed(1); b.textContent='計時'; $('swStatus').hidden=true; return; }
+  if(sw.running) return;
+  sw.running=true; sw.t0=performance.now(); sw.target=id; b.textContent='停止';
+  const s=$('swStatus'); s.hidden=false; s.className='status ok';
+  (function l(){ if(!sw.running) return; s.textContent='計時中 '+((performance.now()-sw.t0)/1000).toFixed(1)+' 秒'; sw.raf=requestAnimationFrame(l); })();
+}));
+$('btnSaveClinic').addEventListener('click',()=>{
+  const n=v=>v===''?null:+v;
+  const rec={d:$('cDate').value||todayStr(),hhdL:n($('cHhdL').value),hhdR:n($('cHhdR').value),sts:n($('cSts').value),tug:n($('cTug').value),walk:n($('cWalk').value),mmtL:$('cMmtL').value,mmtR:$('cMmtR').value,note:$('cNote').value.trim()};
+  if(rec.hhdL==null&&rec.hhdR==null&&rec.sts==null&&rec.tug==null&&rec.walk==null&&!rec.mmtL&&!rec.mmtR&&!rec.note){toast('何か1つ入力してください');return;}
+  if(DB.sample){DB.holds=DB.holds.filter(h=>!h.ex);DB.clinic=DB.clinic.filter(c=>!c.ex);DB.sample=false;}
+  DB.clinic=DB.clinic.filter(c=>c.d!==rec.d); DB.clinic.push(rec); DB.clinic.sort((a,b)=>a.d<b.d?-1:1); save();
+  ['cHhdL','cHhdR','cSts','cTug','cWalk','cNote'].forEach(i=>$(i).value=''); $('cMmtL').value='';$('cMmtR').value='';
+  toast('保存しました'); render();
+});
+
+/* ===== data ===== */
+$('btnExport').addEventListener('click',()=>{$('ioOut').value=JSON.stringify({v:1,holds:DB.holds.filter(h=>!h.ex),clinic:DB.clinic.filter(c=>!c.ex),goalSec:DB.goalSec});});
+$('btnCopy').addEventListener('click',()=>{ if(!$('ioOut').value) $('btnExport').click(); const t=$('ioOut').value; navigator.clipboard.writeText(t).then(()=>toast('コピーしました')).catch(()=>{$('ioOut').select();toast('全選択しました。長押しでコピー');}); });
+$('btnImport').addEventListener('click',()=>{
+  try{ const o=JSON.parse($('ioIn').value); let n=0;
+    const keys=new Set(DB.holds.map(h=>h.t+h.side)); (o.holds||[]).forEach(h=>{if(!keys.has(h.t+h.side)){DB.holds.push(h);n++;}});
+    const cd=new Set(DB.clinic.map(c=>c.d)); (o.clinic||[]).forEach(c=>{if(!cd.has(c.d)){DB.clinic.push(c);n++;}});
+    DB.clinic.sort((a,b)=>a.d<b.d?-1:1); if(o.goalSec) DB.goalSec=o.goalSec;
+    DB.holds=DB.holds.filter(h=>!h.ex);DB.clinic=DB.clinic.filter(c=>!c.ex);DB.sample=false;
+    save(); $('ioIn').value=''; showData(n+' 件を読み込みました','ok'); render();
+  }catch(e){showData('読み込めませんでした。貼り付けた文字を確認してください。','err');}
+});
+function showData(m,c){const s=$('dataStatus');s.hidden=false;s.className='status '+(c||'');s.textContent=m;}
+let clearArmed=false;
+$('btnClear').addEventListener('click',()=>{ if(!clearArmed){clearArmed=true;$('btnClear').textContent='本当に消す（もう一度押す）';setTimeout(()=>{clearArmed=false;$('btnClear').textContent='すべて消す';},4000);return;} DB={holds:[],clinic:[],goalSec:20,sample:false}; save(); clearArmed=false;$('btnClear').textContent='すべて消す'; showData('消しました'); render(); });
+$('btnSample').addEventListener('click',()=>{ DB.holds=[];DB.clinic=[]; seedSample(); save(); showData('例のデータを入れました。実際に記録すると自動で消えます。','ok'); render(); });
+function seedSample(){
+  const now=new Date(); DB.sample=true;
+  for(let i=29;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(i%4===1) continue;
+    const base=6+(29-i)*0.35;
+    for(let k=0;k<3;k++){ DB.holds.push({d:ds,t:d.toISOString()+k,side:'L',sec:+(base+Math.sin(i+k)*1.5).toFixed(1),flex:12,mode:'s',target:15,ex:1}); DB.holds.push({d:ds,t:d.toISOString()+'r'+k,side:'R',sec:+(base-1.5+Math.cos(i+k)*1.5).toFixed(1),flex:14,mode:'s',target:15,ex:1}); }
+  }
+  const m=[-90,-60,-30,0]; m.forEach((off,i)=>{ const d=new Date(now); d.setDate(now.getDate()+off); DB.clinic.push({d:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),hhdL:+(6.2+i*0.9).toFixed(1),hhdR:+(5.6+i*0.8).toFixed(1),sts:+(28-i*2.5).toFixed(1),tug:+(19-i*1.2).toFixed(1),walk:+(16-i*1).toFixed(1),mmtL:i<2?'3-':'3',mmtR:'3-',note:i===0?'例：初回評価':'',ex:1}); });
+}
+if(DB.holds.length===0&&DB.clinic.length===0&&!DB.sample){ seedSample(); save(); }
+
+/* ===== render ===== */
+function dayBest(){ const m={}; DB.holds.forEach(h=>{ const k=h.d; m[k]=m[k]||{L:null,R:null}; if(m[k][h.side]==null||h.sec>m[k][h.side]) m[k][h.side]=h.sec; }); return m; }
+function render(){
+  const ex=DB.sample; const pillEx=ex?' <span class="pill">例</span>':'';
+  const t=todayStr(); const db=dayBest(); const td=db[t]||{L:null,R:null};
+  $('sBestL').textContent=td.L==null?'--':td.L.toFixed(1); $('sBestR').textContent=td.R==null?'--':td.R.toFixed(1);
+  // streak
+  let streak=0; const d=new Date(); for(;;){ const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); if(db[k]){streak++;d.setDate(d.getDate()-1);} else { if(streak===0&&k===t){d.setDate(d.getDate()-1);continue;} break; } if(streak>999)break; }
+  $('sStreak').textContent=streak;
+  $('goalSec').value=DB.goalSec;
+  const bestAll=Math.max(0,...DB.holds.map(h=>h.sec)); $('goalNote').textContent=bestAll?('これまでの最長 '+bestAll.toFixed(1)+' 秒'):'';
+  // today log
+  const tl=DB.holds.filter(h=>h.d===t).slice().reverse(); $('todayCount').textContent=tl.length+'回';
+  $('todayLog').innerHTML=tl.map(h=>'<li><span>'+(h.side==='L'?'左':'右')+' <b class="big">'+h.sec.toFixed(1)+'</b> 秒'+(h.flex!=null?' <span class="note" style="display:inline">最伸展 '+h.flex+'°</span>':'')+(h.mode==='m'?' <span class="pill">手動</span>':'')+'</span><button class="del" data-t="'+h.t+'">削除</button></li>').join('')||'<li><span class="note">まだ記録がありません</span></li>';
+  $('todayLog').querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{DB.holds=DB.holds.filter(h=>h.t!==b.dataset.t);save();render();}));
+  // hold chart 30 days
+  const days=[]; const dd=new Date(); for(let i=29;i>=0;i--){const x=new Date(dd);x.setDate(dd.getDate()-i);days.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'));}
+  const L=days.map(k=>db[k]?db[k].L:null), R=days.map(k=>db[k]?db[k].R:null);
+  $('holdChart').innerHTML=lineChart(days,[{c:'var(--left)',v:L},{c:'var(--right)',v:R}],{goal:DB.goalSec,ex,fmt:x=>x.toFixed(0)+'s'});
+  // clinic
+  const cl=DB.clinic.slice();
+  $('hhdChart').innerHTML=lineChart(cl.map(c=>c.d),[{c:'var(--left)',v:cl.map(c=>c.hhdL)},{c:'var(--right)',v:cl.map(c=>c.hhdR)}],{ex,fmt:x=>x.toFixed(1),dates:true});
+  const tb=$('clinicTable').querySelector('tbody');
+  tb.innerHTML=cl.slice().reverse().map(c=>'<tr><td>'+c.d.slice(2).replace(/-/g,'/')+(c.ex?'<span class="pill">例</span>':'')+'</td><td>'+f1(c.hhdL)+'</td><td>'+f1(c.hhdR)+'</td><td>'+f1(c.sts)+'</td><td>'+f1(c.tug)+'</td><td>'+f1(c.walk)+'</td><td>'+(c.mmtL||'-')+'/'+(c.mmtR||'-')+'</td><td><button class="del" data-d="'+c.d+'">削除</button></td></tr>').join('')||'<tr><td colspan="8" class="note">まだ記録がありません</td></tr>';
+  tb.querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>{DB.clinic=DB.clinic.filter(c=>c.d!==b.dataset.d);save();render();}));
+  // data
+  $('dHolds').textContent=DB.holds.length; $('dDays').textContent=Object.keys(db).length; $('dClinic').textContent=DB.clinic.length;
+}
+function f1(v){return v==null?'-':(+v).toFixed(1);}
+function lineChart(labels,series,o){
+  const W=520,H=190,pl=34,pr=10,pt=14,pb=26; const n=labels.length;
+  const all=series.flatMap(s=>s.v).filter(v=>v!=null); if(o.goal) all.push(o.goal);
+  if(!n||!all.length) return '<p class="note">記録がたまるとここにグラフが出ます。</p>';
+  const max=Math.max(...all)*1.15, min=0;
+  const x=i=>n===1?(pl+(W-pl-pr)/2):pl+(W-pl-pr)*i/(n-1), y=v=>pt+(H-pt-pb)*(1-(v-min)/(max-min));
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="推移グラフ">';
+  const ticks=4; for(let k=0;k<=ticks;k++){const v=max*k/ticks;s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(pl-4)+'" y="'+(y(v)+3)+'" text-anchor="end">'+o.fmt(v)+'</text>';}
+  if(o.goal){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(o.goal)+'" y2="'+y(o.goal)+'" stroke="var(--good)" stroke-dasharray="4 4" stroke-width="1.5"/><text x="'+(W-pr)+'" y="'+(y(o.goal)-4)+'" text-anchor="end" fill="var(--good)">目標 '+o.goal+'s</text>';}
+  const step=Math.max(1,Math.ceil(n/6)); labels.forEach((l,i)=>{ if(i%step===0||i===n-1) s+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle">'+l.slice(5).replace('-','/')+'</text>'; });
+  series.forEach(se=>{ let d='',pen=false; se.v.forEach((v,i)=>{ if(v==null){pen=false;return;} d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)+' '; pen=true; });
+    s+='<path d="'+d+'" fill="none" stroke="'+se.c+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+    se.v.forEach((v,i)=>{ if(v!=null) s+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+se.c+'"/>'; });
+    for(let i=se.v.length-1;i>=0;i--){ if(se.v[i]!=null){ s+='<circle cx="'+x(i)+'" cy="'+y(se.v[i])+'" r="5" fill="none" stroke="'+se.c+'" stroke-width="1.5"/>'; break; } }
+  });
+  if(o.ex) s+='<text x="'+(pl+4)+'" y="'+(pt+10)+'" fill="var(--warn)" font-weight="700">例のデータ</text>';
+  return s+'</svg>';
+}
+render();
+})();
+</script>
+</body>
+</html>
