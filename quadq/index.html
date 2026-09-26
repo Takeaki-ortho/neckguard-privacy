@@ -30,7 +30,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic
 header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:14px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 header h1{font-size:22px;margin:0;letter-spacing:.02em}
 header h1 small{font-size:12px;color:var(--muted);font-weight:500;margin-left:8px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--soft);padding:4px;border-radius:12px;margin:6px 0 16px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--soft);padding:4px;border-radius:12px;margin:6px 0 16px}
 .tabs button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:10px 4px;border-radius:9px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--panel);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .tabs button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -92,6 +92,13 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:9px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){ .gauge i{transition:none} }
+.gsel{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gsel button{border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-weight:700;font-size:13px;padding:8px 2px;border-radius:9px;cursor:pointer}
+.gsel button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.gimg{width:100%;height:auto;border-radius:10px;display:block;margin:8px 0}
+.glist{margin:0;padding-left:22px;font-size:14px}.glist li{margin:4px 0}
+.norm{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px}.norm b{font-variant-numeric:tabular-nums}.norm span{color:var(--muted)}
+.gtitle{font-size:20px;font-weight:700;margin:0}
 </style>
 </head>
 <body>
@@ -105,6 +112,7 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
 <div class="tabs" role="tablist">
   <button role="tab" aria-selected="true" data-tab="home">在宅（毎日）</button>
   <button role="tab" aria-selected="false" data-tab="clinic">外来（月1）</button>
+  <button role="tab" aria-selected="false" data-tab="guide">やり方</button>
   <button role="tab" aria-selected="false" data-tab="data">データ</button>
 </div>
 
@@ -170,6 +178,7 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
 <section class="tab" id="tab-clinic" hidden>
   <div class="card">
     <h2>外来評価を記録する</h2>
+    <button class="btn small ghost" id="btnGoGuide">各検査のやり方（イラスト付き）を見る</button>
     <label class="f">日付<input type="date" id="cDate"></label>
     <div class="grid2">
       <label class="f">HHD 左（kgf）<input type="number" step="0.1" inputmode="decimal" id="cHhdL" placeholder="例 8.5"></label>
@@ -207,6 +216,12 @@ textarea.io{font-family:"IBM Plex Mono",monospace;font-size:12px;height:110px}
     <div class="tbl"><table id="clinicTable"><thead><tr><th>日付</th><th>HHD左</th><th>HHD右</th><th>5xSTS</th><th>TUG</th><th>10m</th><th>MMT</th><th></th></tr></thead><tbody></tbody></table></div>
     <p class="note">HHD：ハンドヘルドダイナモメーター。座位・膝90°・下腿遠位で押し当て、3回の最大値を記録。</p>
   </div>
+</section>
+
+<!-- ===== やり方 ===== -->
+<section class="tab" id="tab-guide" hidden>
+  <div class="gsel" id="gsel"></div>
+  <div id="guideBody"></div>
 </section>
 
 <!-- ===== データ ===== -->
@@ -268,7 +283,7 @@ $('today').textContent=todayStr().replace(/-/g,'/');
 /* tabs */
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
-  ['home','clinic','data'].forEach(t=>$('tab-'+t).hidden=(t!==b.dataset.tab));
+  ['home','clinic','guide','data'].forEach(t=>$('tab-'+t).hidden=(t!==b.dataset.tab));
   render();
 }));
 
@@ -453,6 +468,53 @@ function lineChart(labels,series,o){
   if(o.ex) s+='<text x="'+(pl+4)+'" y="'+(pt+10)+'" fill="var(--warn)" font-weight="700">例のデータ</text>';
   return s+'</svg>';
 }
+
+/* ===== guide ===== */
+const GUIDES=[
+{id:'hhd',name:'HHD',full:'HHD 膝伸展筋力',sub:'ハンドヘルドダイナモメーター',img:'img/hhd.jpg',
+ purpose:'大腿四頭筋の等尺性筋力を kgf で測る。MMT3-の帯域では最も変化に敏感で、外来の主指標にする。',
+ setup:['診察台の端に深く腰かけ、股関節・膝関節ともに90°。下腿は台から垂らし、足は床につけない。','両手は台の縁を軽くつかんでよい（体幹を後ろに倒さないため）。','センサーパッドを下腿前面の遠位（外果の約5cm上）に当てる。検者は反対の手で大腿を台に軽く押さえる。'],
+ steps:['「私の手を押し返して、膝を伸ばしてください」と説明し、1回軽く練習する。','「はじめ」で3秒かけて力を上げ、最大努力を約5秒保つ。検者は器械を動かさず固定する（make test）。','30秒以上休んで、合計3回。左右とも行う。'],
+ record:['3回の最大値を kgf で記録（外来タブの「HHD 左／右」）。','体重で割った値（kgf/kg）も推移の比較に使える。','痛みや代償（体幹の後傾、腰を浮かす）があればメモに残す。'],
+ norms:[['体重比 0.30 kgf/kg','歩行自立のおおよその目安'],['体重比 0.35〜0.40','手を使わずに立ち上がる目安'],['左右差 15%以上','弱い側に注意']],
+ cautions:['検者の固定が負けると値が低く出る。固定が難しい場合はベルトで固定する方法もある。','膝に痛みが出るときは中止し、角度を変えて再評価する。']},
+{id:'sts',name:'5回立ち',full:'5回立ち上がり',sub:'5xSTS（Five Times Sit-to-Stand）',img:'img/sts.jpg',
+ purpose:'下肢筋力とバランスを含めた「立ち上がる力」を秒で測る。生活で意味のある数字として本人に見せる。',
+ setup:['肘掛けのない椅子（座面高 約43〜45cm）を壁につけて固定する。','深く腰かけ、背もたれにもたれた状態から開始。腕は胸の前で組む。','足は肩幅、床にしっかりつける。'],
+ steps:['「できるだけ速く、5回立ったり座ったりしてください」と説明し、1回だけ練習する。','「はじめ」の合図と同時に計時を始める。','立位は膝が伸びきるまで、座位はお尻が座面につくまで。','5回目に立ち上がって膝が伸びきった瞬間に計時を止める。'],
+ record:['秒数を記録（外来タブの「5回立ち上がり」、計時ボタンあり）。','腕を使わないと立てない場合は「手つき」と条件をメモに書き、以後は同じ条件で比べる。','5回できない場合は、できた回数と秒数をメモに残す。'],
+ norms:[['60代 約11.4秒 / 70代 約12.6秒 / 80代 約14.8秒','健常者の平均（参考）'],['15秒以上','転倒リスク上昇の目安'],['2〜3秒の短縮','本人が変化を実感できる目安']],
+ cautions:['ふらつくときは検者が横に立つ。膝崩れの既往がある人は、前に机を置いてつかめるようにしておく。','膝の過伸展で立位を取る人は、伸びきりの判定を「立位で静止した時」に置き換える。']},
+{id:'tug',name:'TUG',full:'TUG',sub:'Timed Up and Go',img:'img/tug.jpg',
+ purpose:'椅子から立ち上がり、3m歩いて、向きを変えて戻り、座るまでの時間。移動能力と転倒リスクをまとめて表す。',
+ setup:['肘掛けのある椅子（座面高 約46cm）を壁につける。','椅子の前脚から3m先の床にテープまたはコーンで目印をつける。','普段使っている杖や歩行器はそのまま使ってよい。使ったものはメモに残す。'],
+ steps:['「はい」の合図で立ち上がり、普段の速さで歩いて目印を回り、戻ってきて座る。','計時は「はい」の合図と同時に始め、お尻が座面についた瞬間に止める。','1回練習してから1〜2回計測し、速い方（または平均）を記録する。'],
+ record:['秒数を記録（外来タブの「TUG」、計時ボタンあり）。','「普段の速さ」で統一する。最大速度で測る場合は別条件としてメモする。'],
+ norms:[['10秒未満','健常高齢者の目安'],['13.5秒以上','転倒リスクが高い目安'],['20秒以上','外出に介助が必要な目安'],['30秒以上','移動に全面的な介助']],
+ cautions:['向きを変えるところで最も転びやすい。検者は目印の近くに立つ。','椅子の高さと目印の距離は毎回同じにする。']},
+{id:'walk',name:'10m歩行',full:'10m歩行',sub:'10 Meter Walk Test',img:'img/walk.jpg',
+ purpose:'歩く速さを m/秒 で測る。地域で歩けるかどうかの判断に直結する数字。',
+ setup:['まっすぐな廊下に 14m の直線をとる。両端2mは助走と減速用で、中央の10mだけを計る。','床に 0m・2m・12m・14m の4か所へテープを貼る。','杖や装具は普段どおり。使ったものはメモに残す。'],
+ steps:['0mの位置から歩き始め、14mまで止まらずに歩く。','計時は 2m のテープを通過した瞬間に始め、12m のテープを通過した瞬間に止める。','「普段の速さ」で1〜2回。余力があれば「できるだけ速く」も1回測り、別に記録する。'],
+ record:['秒数を記録（外来タブの「10m歩行」、計時ボタンあり）。','速さは 10 ÷ 秒 で m/秒 になる。例：12.5秒なら 0.8 m/秒。'],
+ norms:[['1.0 m/秒以上','屋外・地域歩行の目安（10秒以下）'],['0.8 m/秒未満','屋外歩行が難しくなる目安（12.5秒以上）'],['0.6 m/秒未満','屋内歩行レベル（16.7秒以上）'],['0.1 m/秒の改善','意味のある変化の目安']],
+ cautions:['ゴール手前で減速しないよう、14mまで歩き切ることを伝える。','廊下の長さが足りないときは助走と減速を1mずつにし、条件をメモする。']}
+];
+let gsel='hhd';
+function esc(x){return x.replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function renderGuide(){
+  $('gsel').innerHTML=GUIDES.map(g=>'<button aria-pressed="'+(g.id===gsel)+'" data-g="'+g.id+'">'+g.name+'</button>').join('');
+  $('gsel').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{gsel=b.dataset.g;renderGuide();}));
+  const g=GUIDES.find(x=>x.id===gsel);
+  const list=(t,a,num)=>'<div class="card"><h2>'+t+'</h2><'+(num?'ol':'ul')+' class="glist">'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</'+(num?'ol':'ul')+'></div>';
+  $('guideBody').innerHTML='<section class="tab">'+
+   '<div class="card"><p class="gtitle">'+esc(g.full)+'</p><p class="note">'+esc(g.sub)+'</p><img class="gimg" src="'+g.img+'" alt="'+esc(g.full)+'のイラスト"><p style="font-size:14px;margin:0">'+esc(g.purpose)+'</p></div>'+
+   list('準備',g.setup,false)+list('手順',g.steps,true)+list('記録のしかた',g.record,false)+
+   '<div class="card"><h2>目安の数字</h2><div class="norm">'+g.norms.map(n=>'<b>'+esc(n[0])+'</b><span>'+esc(n[1])+'</span>').join('')+'</div><p class="note">数字は健常者や一般高齢者の参考値です。この記録では「前回の自分」との比較を優先します。</p></div>'+
+   list('注意',g.cautions,false)+'</section>';
+}
+renderGuide();
+$('btnGoGuide').addEventListener('click',()=>{document.querySelector('.tabs button[data-tab="guide"]').click();window.scrollTo(0,0);});
 render();
 })();
 </script>
