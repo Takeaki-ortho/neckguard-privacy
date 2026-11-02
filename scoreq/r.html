@@ -76,13 +76,27 @@ table.recs td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top
 .err{color:var(--danger);font-size:13px;font-weight:700}
 .disc{font-size:11.5px;color:var(--muted);margin-top:28px;padding-top:14px;border-top:1px solid var(--line);line-height:1.7}
 details summary{cursor:pointer;font-size:13px;color:var(--ink2);font-weight:700}
+.tagbox{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.tagbox h3{font-size:15px;margin:0 0 10px}.tagbox h3 small,.card h2 small{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.tagbox .field{margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.tagchip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink2);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.tagchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.addtag{display:flex;gap:8px;margin-top:8px}.addtag input{flex:1}
+.rechead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.seg{display:flex;gap:4px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.filters select,.filters input{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+.mini{display:inline-block;font-size:11px;background:var(--surface2);color:var(--ink2);border-radius:6px;padding:1px 6px;margin:1px 3px 1px 0}
+table.case td{white-space:nowrap;font-size:12.5px}table.case a{color:var(--ink);text-decoration:none}
+.muted{color:var(--muted);font-size:11.5px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="app"><div class="brand">KneeQ<small>結果受信 / Received results</small></div><a class="btn small" href="./">KneeQ本体</a></header>
   <main id="app"></main>
-  <div class="disc">患者さんのQRコードに含まれる結果をこの端末のブラウザ内で表示・保存しています。サーバーには送信されません。「受信履歴」もこの端末内のみに保存されます(症例IDメモは研究IDのみ入力し、氏名は入力しないでください)。</div>
+  <div class="disc">患者さんのQRコードに含まれる結果をこの端末のブラウザ内で表示・保存しています。サーバーには送信されません。記録とタグもこの端末内のみに保存されます（研究IDのみ入力し、氏名・カルテ番号は入力しないでください）。</div>
 </div>
 <script>
 "use strict";
@@ -158,29 +172,59 @@ function ctxHtml(P){
   if(P.surg)h+=`<span class="chip neutral">手術日 ${esc(fmtD(P.surg))}</span>`;
   return h?`<div class="ctx">${h}</div>`:"";
 }
-function csvOf(P,memo){
-  const rows=[];
-  const base=[P.date?fmtD(P.date):"",memo||"",timingLabel(P.timing),P.side,P.surg?fmtD(P.surg):""];
-  P.qs.forEach(q=>{q.scores.forEach(s=>rows.push([...base,NAMES[q.qid]||q.qid,s.key,s.value===null?"":s.value,s.max,q.answers.map(a=>a===null?"":a).join(" ")]));});
-  P.recs.forEach(r=>{r.scores.forEach(s=>rows.push([fmtD(r.date),memo||"",r.kind==="pre"?"術前":r.kind==="post"?"術後":"",P.side,"",NAMES[r.qid]||r.qid,s.key,s.value===null?"":s.value,s.max,""]));});
-  return rows.map(r=>r.map(x=>String(x).replace(/,/g," ")).join(","));
+const TPS=["術前","術後3M","術後6M","術後9M","術後12M","術後24M","その他"];
+const DEFAULT_TAGS=["外来","電話・オンライン","要フォロー","スポーツ復帰前","初回再建","再建術後の再断裂","半月板合併","LET/ALL併用","Segond骨折"];
+const SHORT={ikdc:"IKDC",aclrsi:"RSI",lysholm:"Lysholm",tegner:"Tegner",koos:"KOOS",oks:"OKS",fjs:"FJS"};
+function tpFromPayload(t){
+  if(!t)return "";
+  const [k,v]=t.split(":");
+  if(k==="pre"||(k==="tp"&&v==="pre"))return "術前";
+  if(k==="tp")return v==="other"?"その他":(TPS.includes(`術後${v}M`)?`術後${v}M`:"その他");
+  if(k==="post"){const m=+v,std=[3,6,9,12,24];const n=std.reduce((a,b)=>Math.abs(b-m)<Math.abs(a-m)?b:a);return Math.abs(n-m)<=1.5?`術後${n}M`:"その他";}
+  return "その他";
 }
-const CSV_HEAD="date,memo,timing,side,surgery,questionnaire,subscale,score,max,answers";
+function recTags(x){return x.tags||[];}
+function recId(x){return x.id||"";}
+function recTp(x){return x.tp||"";}
+function csvOf(P,x){
+  const rows=[];
+  const base=[P.date?fmtD(P.date):"",recId(x),recTp(x),recTags(x).join(" / "),(x.memo||""),timingLabel(P.timing),P.side,P.surg?fmtD(P.surg):""];
+  P.qs.forEach(q=>{q.scores.forEach(s=>rows.push([...base,NAMES[q.qid]||q.qid,s.key,s.value===null?"":s.value,s.max,q.answers.map(a=>a===null?"":a).join(" ")]));});
+  P.recs.forEach(r=>{r.scores.forEach(s=>rows.push([fmtD(r.date),recId(x),recTp(x),recTags(x).join(" / "),(x.memo||""),r.kind==="pre"?"術前":r.kind==="post"?"術後":"",P.side,"",NAMES[r.qid]||r.qid,s.key,s.value===null?"":s.value,s.max,""]));});
+  return rows.map(r=>r.map(v=>String(v).replace(/[,\n]/g," ")).join(","));
+}
+const CSV_HEAD="回答日,研究ID,時点,タグ,メモ,時期(患者入力),術側,手術日,質問票,下位尺度,スコア,満点,回答";
 function loadLS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 let history=loadLS("sq_received",[]);
-let current=null,parseErr="";
+let tagVocab=loadLS("kq_tagvocab",DEFAULT_TAGS);
+let view=loadLS("kq_view",{mode:"list",fid:"",ftag:"",q:""});
+let current=null,parseErr="",edit=null;
+function startEdit(){
+  if(!current){edit=null;return;}
+  const ex=history.find(x=>x.raw===current.raw);
+  edit=ex?{id:ex.id||"",tp:ex.tp||tpFromPayload(current.timing),tags:[...(ex.tags||[])],memo:ex.memo||"",saved:true}
+         :{id:"",tp:tpFromPayload(current.timing),tags:[],memo:"",saved:false};
+}
 try{current=parse(location.hash);}catch(e){parseErr=e.message;}
-
+startEdit();
 function copyText(txt,btn,done){
   (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{if(btn)btn.textContent=done;}).catch(()=>{prompt("コピーしてください",txt);});
+}
+function scoreSummary(P){
+  return [...P.qs.map(q=>`${SHORT[q.qid]||q.qid} ${q.scores.filter(s=>s.value!==null).map(s=>q.scores.length>1?`${SUBS[s.key]||s.key}${s.value}`:s.value).join("/")}`),...(P.recs.length?[`記録${P.recs.length}件`]:[])].join(" · ");
+}
+function knownIds(){return [...new Set(history.map(recId).filter(Boolean))].sort();}
+function chip(label,on,attr){return `<button type="button" class="tagchip ${on?"on":""}" ${attr}>${esc(label)}</button>`;}
+function filtered(){
+  const q=(view.q||"").trim();
+  return [...history].filter(x=>(!view.fid||recId(x)===view.fid)&&(!view.ftag||recTags(x).includes(view.ftag))&&(!q||[recId(x),recTp(x),...recTags(x),x.memo||""].join(" ").includes(q))).sort((a,b)=>b.ts-a.ts);
 }
 function render(){
   const app=document.getElementById("app");
   let h="";
   if(parseErr)h+=`<section class="card"><h2>読み取りエラー</h2><p class="err">${esc(parseErr)}</p></section>`;
-  if(current){
-    const already=history.some(x=>x.raw===current.raw);
+  if(current&&edit){
     h+=`<section class="card"><h2>受信した結果</h2>${ctxHtml(current)}`;
     current.qs.forEach(q=>{h+=scoreRows(q.qid,q.scores,q.answers);});
     if(current.recs.length){
@@ -188,42 +232,80 @@ function render(){
       current.recs.forEach(r=>{h+=`<tr><td>${esc(fmtD(r.date))}</td><td>${esc(NAMES[r.qid]||r.qid)}</td><td>${r.kind==="pre"?"術前":r.kind==="post"?"術後":"—"}</td><td><b>${r.scores.filter(s=>s.value!==null).map(s=>r.scores.length>1?`${SUBS[s.key]||s.key} ${s.value}`:`${s.value} / ${s.max}`).join(" · ")}</b></td></tr>`;});
       h+=`</tbody></table></div>`;
     }
-    h+=`<div class="formgrid" style="margin-top:16px"><div class="field"><label>メモ(研究ID など・氏名は入力しない)</label><input id="memo" placeholder="例: ACL003 / 術後6か月"></div></div>
-    <div class="rowend"><button class="btn" id="b_copy">CSVコピー</button><button class="btn primary" id="b_keep" ${already?"disabled":""}>${already?"受信履歴に保存済み":"受信履歴に保存"}</button></div>
-    <div id="msg" class="ok" style="text-align:right;margin-top:6px"></div></section>`;
+    h+=`<div class="tagbox"><h3>識別タグ <small>氏名・カルテ番号は入れない</small></h3>
+      <div class="field"><label>研究ID（必須）</label><input id="t_id" list="idlist" value="${esc(edit.id)}" placeholder="例: ACL013" autocomplete="off"><datalist id="idlist">${knownIds().map(i=>`<option value="${esc(i)}">`).join("")}</datalist></div>
+      <div class="field"><label>時点</label><div class="chips">${TPS.map(t=>chip(t,edit.tp===t,`data-tp="${esc(t)}"`)).join("")}</div></div>
+      <div class="field"><label>タグ（複数可）</label><div class="chips">${tagVocab.map(t=>chip(t,edit.tags.includes(t),`data-tag="${esc(t)}"`)).join("")}</div>
+        <div class="addtag"><input id="t_new" placeholder="タグを追加（例: 術式BTB）"><button class="btn small" id="b_addtag">追加</button></div></div>
+      <div class="field"><label>メモ（任意）</label><input id="t_memo" value="${esc(edit.memo)}" placeholder="例: 再診時に回答"></div>
+      <div class="rowend"><button class="btn" id="b_copy">この結果をCSVコピー</button><button class="btn primary" id="b_keep">${edit.saved?"タグを更新して保存":"記録に保存"}</button></div>
+      <div id="msg" class="${edit.saved?"ok":"sub"}" style="text-align:right;margin-top:6px">${edit.saved?"この結果は記録に保存済みです":""}</div></div></section>`;
   }
   if(!current&&!parseErr){
-    h+=`<section class="card"><h2>QRコードを読み取ってください</h2><p class="sub">患者さんのKneeQ画面の「結果をQRで表示」をカメラで読み取ると、このページに結果が表示されます。</p>
+    h+=`<section class="card"><h2>QRコードを読み取ってください</h2><p class="sub">患者さんのKneeQ画面の「結果をQRで表示」をiPhoneのカメラで読み取ると、このページに結果が表示されます。読み取ったら研究IDと時点のタグを付けて「記録に保存」。</p>
     <div class="field"><label>または、コードの文字列を貼り付け</label><textarea id="paste" rows="3" placeholder="v1;d=…"></textarea></div>
     <div class="rowend"><button class="btn primary" id="b_paste">表示</button></div></section>`;
   }
-  // history
-  h+=`<section class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2 style="margin:0">受信履歴 <small style="font-size:12px;color:var(--muted);font-weight:400">この端末内のみ</small></h2>
-  <span><button class="btn small" id="b_hcsv">全件CSVコピー</button> <button class="btn small danger" id="b_hclear">全削除</button></span></div>`;
-  if(!history.length)h+=`<div class="empty">まだ受信履歴はありません。</div>`;
-  else{
-    h+=`<div class="tblwrap" style="margin-top:10px"><table class="recs"><thead><tr><th>受信</th><th>メモ</th><th>時期</th><th>内容</th><th></th></tr></thead><tbody>`;
-    [...history].sort((a,b)=>b.ts-a.ts).forEach(x=>{
-      let P;try{P=parse("#"+x.raw);}catch(e){return;}
-      const cont=[...P.qs.map(q=>`${NAMES[q.qid]||q.qid} ${q.scores.filter(s=>s.value!==null).map(s=>q.scores.length>1?`${SUBS[s.key]||s.key}${s.value}`:s.value).join("/")}`),...(P.recs.length?[`記録${P.recs.length}件`]:[])].join(" · ");
-      const d=new Date(x.ts);
-      h+=`<tr><td>${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}</td><td>${esc(x.memo||"—")}</td><td>${esc(timingLabel(P.timing)||"—")}</td><td><a class="btn ghost small" href="#${encodeURIComponent(x.raw)}">${esc(cont)}</a></td><td><button class="btn ghost small danger" data-del="${x.ts}">削除</button></td></tr>`;
-    });
+  // 記録
+  const ids=knownIds(); const tagsUsed=[...new Set(history.flatMap(recTags))];
+  h+=`<section class="card"><div class="rechead"><h2 style="margin:0">記録 <small>この端末内のみ・${history.length}件</small></h2>
+  <span class="seg"><button class="btn small ${view.mode==="list"?"primary":""}" data-mode="list">一覧</button><button class="btn small ${view.mode==="case"?"primary":""}" data-mode="case">症例ごと</button></span></div>
+  <div class="filters"><select id="f_id"><option value="">研究ID：すべて</option>${ids.map(i=>`<option ${view.fid===i?"selected":""}>${esc(i)}</option>`).join("")}</select>
+  <select id="f_tag"><option value="">タグ：すべて</option>${tagsUsed.map(t=>`<option ${view.ftag===t?"selected":""}>${esc(t)}</option>`).join("")}</select>
+  <input id="f_q" value="${esc(view.q||"")}" placeholder="検索"></div>`;
+  const list=filtered();
+  if(!history.length)h+=`<div class="empty">まだ記録はありません。</div>`;
+  else if(view.mode==="list"){
+    h+=`<div class="tblwrap"><table class="recs"><thead><tr><th>回答日</th><th>研究ID</th><th>時点</th><th>スコア</th><th>タグ</th><th></th></tr></thead><tbody>`;
+    list.forEach(x=>{let P;try{P=parse("#"+x.raw);}catch(e){return;}
+      h+=`<tr><td>${esc(fmtD(P.date)||"—")}</td><td><b>${esc(recId(x)||x.memo||"—")}</b></td><td>${esc(recTp(x)||timingLabel(P.timing)||"—")}</td><td><a class="btn ghost small" href="#${encodeURIComponent(x.raw)}">${esc(scoreSummary(P))}</a></td><td>${recTags(x).map(t=>`<span class="mini">${esc(t)}</span>`).join("")}</td><td><button class="btn ghost small danger" data-del="${x.ts}">削除</button></td></tr>`;});
+    h+=`</tbody></table></div>`;
+  } else {
+    const byId={}; list.forEach(x=>{const k=recId(x)||"（ID未設定）";(byId[k]=byId[k]||[]).push(x);});
+    h+=`<div class="tblwrap"><table class="recs case"><thead><tr><th>研究ID</th>${TPS.map(t=>`<th>${esc(t)}</th>`).join("")}</tr></thead><tbody>`;
+    Object.keys(byId).sort().forEach(k=>{
+      h+=`<tr><td><b>${esc(k)}</b></td>`;
+      TPS.forEach(t=>{const xs=byId[k].filter(x=>recTp(x)===t).sort((a,b)=>b.ts-a.ts);
+        if(!xs.length){h+=`<td class="muted">—</td>`;return;}
+        let P;try{P=parse("#"+xs[0].raw);}catch(e){h+=`<td>?</td>`;return;}
+        h+=`<td><a href="#${encodeURIComponent(xs[0].raw)}">${P.qs.map(q=>`${SHORT[q.qid]||q.qid} <b>${q.scores.filter(s=>s.value!==null).map(s=>s.value).join("/")}</b>`).join("<br>")}</a>${xs.length>1?`<div class="muted">他${xs.length-1}件</div>`:""}</td>`;});
+      h+=`</tr>`;});
     h+=`</tbody></table></div>`;
   }
-  h+=`</section>`;
+  h+=`<div class="rowend"><button class="btn small" id="b_hcsv">表示中をCSVコピー</button><button class="btn small" id="b_bk">バックアップをコピー</button><button class="btn small" id="b_rs">バックアップを取り込み</button><button class="btn small danger" id="b_hclear">全削除</button></div>
+  <p class="note">記録はこの端末のブラウザ内だけに保存されます。別の端末に移すときは「バックアップをコピー」→移し先で「取り込み」。</p></section>`;
   app.innerHTML=h;
   const $=id=>document.getElementById(id);
   const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn;};
-  on("b_copy",()=>copyText([CSV_HEAD,...csvOf(current,$("memo").value)].join("\n"),$("b_copy"),"コピーしました"));
-  on("b_keep",()=>{history.push({ts:Date.now(),memo:$("memo").value,raw:current.raw});saveLS("sq_received",history);render();$("msg")&&($("msg").textContent="保存しました");});
+  const keepFields=()=>{if(!edit)return;const a=$("t_id"),m=$("t_memo");if(a)edit.id=a.value.trim();if(m)edit.memo=m.value;};
+  document.querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>{keepFields();edit.tp=edit.tp===b.dataset.tp?"":b.dataset.tp;render();});
+  document.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>{keepFields();const t=b.dataset.tag;edit.tags=edit.tags.includes(t)?edit.tags.filter(x=>x!==t):[...edit.tags,t];render();});
+  on("b_addtag",()=>{keepFields();const t=$("t_new").value.trim();if(!t)return;if(!tagVocab.includes(t)){tagVocab.push(t);saveLS("kq_tagvocab",tagVocab);}if(!edit.tags.includes(t))edit.tags.push(t);render();});
+  on("b_copy",()=>{keepFields();copyText([CSV_HEAD,...csvOf(current,edit)].join("\n"),$("b_copy"),"コピーしました");});
+  on("b_keep",()=>{keepFields();
+    if(!edit.id){$("msg").className="err";$("msg").textContent="研究IDを入れてください";$("t_id").focus();return;}
+    const rec={ts:Date.now(),raw:current.raw,id:edit.id,tp:edit.tp,tags:edit.tags,memo:edit.memo};
+    const i=history.findIndex(x=>x.raw===current.raw);
+    if(i>=0){rec.ts=history[i].ts;history[i]=rec;}else history.push(rec);
+    saveLS("sq_received",history);edit.saved=true;render();$("msg").className="ok";$("msg").textContent="保存しました（"+edit.id+(edit.tp?" / "+edit.tp:"")+"）";});
   on("b_paste",()=>{const v=$("paste").value.trim();if(!v)return;const m=v.match(/#(.*)$/);location.hash="#"+encodeURIComponent(decodeURIComponent(m?m[1]:v));});
-  on("b_hcsv",()=>{const lines=[CSV_HEAD];history.forEach(x=>{try{lines.push(...csvOf(parse("#"+x.raw),x.memo));}catch(e){}});copyText(lines.join("\n"),$("b_hcsv"),"コピーしました");});
+  document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{view.mode=b.dataset.mode;saveLS("kq_view",view);render();});
+  const fid=$("f_id"),ftag=$("f_tag"),fq=$("f_q");
+  if(fid)fid.onchange=()=>{view.fid=fid.value;saveLS("kq_view",view);render();};
+  if(ftag)ftag.onchange=()=>{view.ftag=ftag.value;saveLS("kq_view",view);render();};
+  if(fq)fq.onchange=()=>{view.q=fq.value;saveLS("kq_view",view);render();};
+  on("b_hcsv",()=>{const lines=[CSV_HEAD];filtered().forEach(x=>{try{lines.push(...csvOf(parse("#"+x.raw),x));}catch(e){}});copyText(lines.join("\n"),$("b_hcsv"),"コピーしました");});
+  on("b_bk",()=>copyText(JSON.stringify({kneeq_backup:1,records:history,tags:tagVocab}),$("b_bk"),"コピーしました"));
+  on("b_rs",()=>{const s=prompt("バックアップの文字列を貼り付けてください");if(!s)return;
+    try{const j=JSON.parse(s);const recs=j.records||[];let n=0;recs.forEach(r=>{if(r&&r.raw&&!history.some(x=>x.raw===r.raw)){history.push(r);n++;}});
+      (j.tags||[]).forEach(t=>{if(!tagVocab.includes(t))tagVocab.push(t);});saveLS("sq_received",history);saveLS("kq_tagvocab",tagVocab);render();alert(n+"件を取り込みました（重複は除外）");}
+    catch(e){alert("読み込めませんでした: "+e.message);}});
   on("b_hclear",()=>{const b=$("b_hclear");if(!b.dataset.armed){b.dataset.armed="1";b.textContent="もう一度押すと全削除";return;}history=[];saveLS("sq_received",history);render();});
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{if(!b.dataset.armed){b.dataset.armed="1";b.textContent="もう一度押すと削除";return;}history=history.filter(x=>x.ts!==+b.dataset.del);saveLS("sq_received",history);render();});
 }
-window.addEventListener("hashchange",()=>{parseErr="";try{current=parse(location.hash);}catch(e){parseErr=e.message;current=null;}render();window.scrollTo(0,0);});
+window.addEventListener("hashchange",()=>{parseErr="";try{current=parse(location.hash);}catch(e){parseErr=e.message;current=null;}startEdit();render();window.scrollTo(0,0);});
 render();
+
 </script>
 </body>
 </html>
