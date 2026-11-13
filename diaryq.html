@@ -43,7 +43,7 @@
 <p>DiaryQ Plus を購読し、アプリ内の説明画面で同意した場合に限り、返信・日記・ふりかえりは Google の生成AI「Gemini」（Google Cloud Vertex AI）によって作成されます。このとき、次の内容が開発者の中継サーバー（Google Cloud Run、日本リージョン）を通じて Google に送信されます。</p>
 <ul>
   <li>その日のチャットの内容（利用者の発言とAIの返事）</li>
-  <li>登場人物ノートの内容と、最近の日記の見出し・冒頭部分</li>
+  <li>登場人物ノートの内容と、最近の日記の見出し・冒頭部分（話し相手と話すときは日記のかわりに、その話し相手と話した最近のトーク）</li>
   <li>日記・ふりかえりを作るときは、その日・その週の記録</li>
   <li>話し相手のキャラクターの顔写真を作るときは、選んだ項目（年齢・性別・性格・ルーツ・仕事）。作られた写真は、チャットや日記と同じく端末内（iCloud 同期がオンならご本人の iCloud にも）にだけ保存されます。自分で選んだ画像はサーバーに送信されません</li>
   <li>購読の確認のための、Apple が署名した購入情報（App Store のトランザクション）</li>
@@ -90,7 +90,7 @@
 <p>Only if you subscribe to DiaryQ Plus and agree on the in-app consent screen, replies, diary entries, and reviews are written by Google's generative AI, Gemini (Google Cloud Vertex AI). In that case, the following is sent to Google through the developer's relay server (Google Cloud Run, Japan region):</p>
 <ul>
   <li>That day's chat (your messages and the AI's replies)</li>
-  <li>Your character notes, and the titles and openings of recent diary entries</li>
+  <li>Your character notes, and the titles and openings of recent diary entries (when you talk with a companion, your recent chats with that companion instead of diary entries)</li>
   <li>When creating a diary entry or review, that day's or week's records</li>
   <li>When creating a companion character's photo, the options you chose (age, gender, personality, heritage, job). Like your chats and diaries, the photo is stored only on your device (and in your own iCloud if iCloud sync is on). Images you choose yourself are never sent to the server</li>
   <li>Apple-signed purchase information (App Store transactions) to confirm your subscription</li>
